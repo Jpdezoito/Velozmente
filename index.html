@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histórias em Quadrinhos</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        header {
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 1rem 0;
+        }
+
+        main {
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        section {
+            margin-bottom: 20px;
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        img {           
+            display: block;            
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 45%; /* Define a largura máxima de cada imagem */
+            height: auto;
+            margin: 10px; /* Adiciona espaçamento entre as imagens */
+            border-radius: 10px;
+            display: flex;
+            justify-content: center; /* Centraliza as imagens horizontalmente */
+            align-items: center; /* Centraliza as imagens verticalmente */
+            flex-wrap: wrap; /* Permite que as imagens quebrem em várias linhas se necessário */            
+        }
+
+        #conteudo-historia {
+            white-space: pre-wrap; /* Preserva as quebras de linha do arquivo TXT */
+        }
+
+        .menu {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .menu a {
+            display: inline-block;
+            margin: 0 10px;
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .navegacao {
+            text-align: center;
+        }
+
+        .seta-navegacao {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        #conteudo-historia {
+            font-family: 'Georgia', serif; /* Escolha uma fonte elegante */
+            font-size: 18px; /* Ajuste o tamanho da fonte */
+            line-height: 1.6; /* Ajuste o espaçamento entre linhas */
+            color: #333; /* Cor do texto */
+            text-align: justify; /* Alinha o texto justificado */
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #fff; /* Cor de fundo da caixa de texto */
+            border-radius: 10px; /* Borda arredondada */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Sombra suave */
+        }     
+
+
+
+#conteudo-historia h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+#conteudo-historia p {
+  margin-bottom: 15px;
+  text-indent: 30px; /* Indentação de parágrafo */
+}
+
+
+/* Estilos para telas menores (celulares) */
+@media (max-width: 600px) {
+  .imagens {
+    flex-direction: column; /* Organiza as imagens em coluna */
+  }
+
+  .imagens img {
+    max-width: 90%; /* Aumenta a largura das imagens */
+    margin: 10px 0; /* Ajusta a margem */
+  }
+
+  #conteudo-historia {
+    font-size: 16px; /* Diminui o tamanho da fonte */
+  }
+  .menu a {
+    margin: 10px 0; /* Adiciona margem superior e inferior aos botões do menu */
+    display: block; /* Faz com que cada botão ocupe uma linha */
+    width: 80%; /* Ajusta a largura dos botões */
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .navegacao {
+    margin-top: 20px; /* Adiciona margem superior aos botões de navegação */
+  }
+
+  .seta-navegacao {
+    display: block; /* Faz com que cada botão ocupe uma linha */
+    width: 45%; /* Ajusta a largura dos botões */
+    margin: 5px auto; /* Centraliza os botões e adiciona margem */
+  }
+}
+        
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Histórias em Quadrinhos</h1>
+        <p>Por José Paulo Siqueira de Campos</p>
+    </header>
+
+    <main>
+        <section class="menu">
+            <a href="#" onclick="carregarHistoria('Velozmente')">Velozmente</a>
+            <a href="#" onclick="carregarHistoria('Ana de luz e Lamina Sombria')">Ana de luz e Lamina Sombria</a>
+        </section>
+
+        <div class="navegacao">
+            <button class="seta-navegacao" onclick="carregarCapituloAnterior()">&lt; Anterior</button>
+            <button class="seta-navegacao" onclick="carregarProximoCapitulo()">Próximo &gt;</button>
+        </div>
+
+        <section class="historia">
+            <h2>A História</h2>
+            <div id="conteudo-historia">
+                <p>Escolha uma história no menu acima.</p>
+            </div>
+
+            <div class="navegacao">
+                <button class="seta-navegacao" onclick="carregarCapituloAnterior()">&lt; Anterior</button>
+                <button class="seta-navegacao" onclick="carregarProximoCapitulo()">Próximo &gt;</button>
+            </div>
+        </section>
+
+        <section class="imagens">
+            <h2>Imagens</h2>
+            <img src="./Imagem do WhatsApp de 2024-11-17 à(s) 10.25.05_ee32d745.jpg" alt="Velozmente em ação">
+            <img src="./Imagem do WhatsApp de 2024-11-17 à(s) 10.36.38_4d83dc00t.jpg" alt="Ana de Luz com sua espada">
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2023 José Paulo Siqueira de Campos</p>
+    </footer>
+
+    <script>
+        let historiaAtual = "";
+        let capituloAtual = 1;
+
+        function carregarHistoria(nomeHistoria) {
+            historiaAtual = nomeHistoria;
+            capituloAtual = 1;
+            carregarCapitulo(capituloAtual);
+        }
+
+        function carregarTexto(arquivo) {
+            fetch(arquivo)
+                .then(response => response.text())
+                .then(texto => {
+                    document.getElementById("conteudo-historia").innerHTML = texto;
+                })
+                .catch(error => {
+                    console.error("Erro ao carregar o arquivo:", error);
+                    document.getElementById("conteudo-historia").innerHTML = "Erro ao carregar o capítulo.";
+                });
+        }
+
+        function carregarCapituloAnterior() {
+            capituloAtual = Math.max(1, capituloAtual - 1);
+            carregarCapitulo(capituloAtual);
+        }
+
+        function carregarProximoCapitulo() {
+            // Calcula o número total de capítulos com base na história atual
+            let totalCapitulos = 0;
+            if (historiaAtual === "Velozmente") {
+                totalCapitulos = 12; // Número de capítulos em "Velozmente"
+            } else if (historiaAtual === "Ana de luz e Lamina Sombria") {
+                totalCapitulos = 3; // Número de capítulos em "Ana de luz e Lamina Sombria"
+            }
+            capituloAtual = Math.min(totalCapitulos, capituloAtual + 1);
+            carregarCapitulo(capituloAtual);
+        }
+
+        function carregarCapitulo(numero) {
+            let nomeArquivo = "";
+            if (historiaAtual === "Velozmente") {
+                nomeArquivo = `Velozmente/Lucas Heroi Capitulo ${numero}.txt`;
+            } else if (historiaAtual === "Ana de luz e Lamina Sombria") {
+                nomeArquivo = `Ana de luz e Lamina Sombria/Ana de luz e Lamina Sombria Capitulo ${numero}.txt`;
+            }
+            carregarTexto(nomeArquivo);
+        }
+    </script>
+</body>
+</html>
