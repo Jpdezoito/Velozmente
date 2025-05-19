@@ -120,8 +120,8 @@
                 { 
                     id: "velozmente", 
                     name: "Velozmente (Lucas)", 
-                    image: "./velozmente1.jpg", // Caminho atualizado pelo usuário
-                    image_modal: "./velozmente1.jpg", // Pode ser um caminho para uma imagem maior/diferente para o modal
+                    image: "./velozmente1.jpg", 
+                    image_modal: "./velozmente1.jpg", 
                     appearance: "Moreno, cabelo penteado para o lado, olhos castanhos. Veste um uniforme azul claro com detalhes em prata e um 'V' estilizado no peito. Usa uma máscara que cobre a parte superior do rosto, deixando o cabelo exposto.", 
                     powers: "Super velocidade (capaz de quebrar a barreira do som), super força (proporcional à sua velocidade), reflexos e agilidade sobre-humanos, capacidade de pensar e processar informações em alta velocidade.", 
                     equipment: "Traje com nanorrobôs controlados pela IA AURA, que podem formar escudos, pequenas lâminas ou auxiliar na estabilização em alta velocidade. Comunicador integrado à máscara.", 
@@ -130,7 +130,7 @@
                 { 
                     id: "analuz", 
                     name: "Ana de Luz", 
-                    image: "./anadeluz1.png", // Caminho atualizado pelo usuário
+                    image: "./anadeluz1.png", 
                     image_modal: "./anadeluz1.png",
                     appearance: "Loira com longos cabelos dourados, olhos azuis brilhantes. Veste uma armadura dourada reluzente com detalhes em branco e uma saia branca com bordas douradas, lembrando uma guerreira celestial.", 
                     powers: "Manipulação da luz: pode criar construtos de luz sólida (escudos, plataformas), disparar rajadas de energia concussiva ou cortante, teletransportar-se através da luz, voar e possui força e resistência aumentadas.", 
@@ -140,7 +140,7 @@
                 { 
                     id: "laminasombria", 
                     name: "Lâmina Sombria", 
-                    image: "./laminasombria1.png", // Caminho atualizado pelo usuário
+                    image: "./laminasombria1.png", 
                     image_modal: "./laminasombria1.png",
                     appearance: "Cabelos longos e roxos escuros, olhos da mesma cor que parecem brilhar com uma luz interna. Veste uma armadura roxa escura com detalhes que lembram diamantes brancos ou fragmentos de cristal.", 
                     powers: "Controle sobre chamas roxas místicas (ataques de energia, teletransporte através das chamas), super força, velocidade e agilidade comparáveis à sua irmã, Ana de Luz.", 
@@ -150,7 +150,7 @@
                 { 
                     id: "metalpunk", 
                     name: "MetalPunk", 
-                    image: "./metalpunk1.png", // Caminho atualizado pelo usuário
+                    image: "./metalpunk1.png", 
                     image_modal: "./metalpunk1.png",
                     appearance: "Corpo predominantemente metálico e robusto, com um moicano de chamas (ou energia similar) vermelhas ou laranjas. Veste roupas de couro rasgadas, correntes e spikes, num estilo punk/rocker.", 
                     powers: "Metamorfose metálica (pode transformar partes do corpo em armas brancas, escudos ou outras ferramentas), super força, alta resistência a danos físicos e energia.", 
@@ -187,7 +187,7 @@
             );
         };
 
-        const StorySelector = ({ activeStoryId, onSelectStory, theme }) => { /* ...código do seletor de história... */
+        const StorySelector = ({ activeStoryId, onSelectStory, theme }) => { 
             const currentTheme = themes[theme];
             return (
                 <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 my-8">
@@ -207,7 +207,7 @@
             );
         };
         
-        const StoryViewer = ({ story, currentChapterIndex, chapterContent, onPrev, onNext, isLoading, theme, onChapterSelect }) => { /* ...código do visualizador de história... */
+        const StoryViewer = ({ story, currentChapterIndex, chapterContent, onPrev, onNext, isLoading, theme, onChapterSelect }) => { 
             if (!story) return <p className="text-center text-xl p-8">Selecione uma história.</p>;
             const currentTheme = themes[theme];
             const chapterTitle = story.chapters[currentChapterIndex] || `Capítulo ${currentChapterIndex + 1}`;
@@ -255,7 +255,7 @@
             );
         };
 
-        const App = () => { /* ...código do App ... */
+        const App = () => { 
             const [activeTheme, setActiveTheme] = useState('city');
             const [activeStoryId, setActiveStoryId] = useState('velozmente');
             const [storyStates, setStoryStates] = useState(() => {
@@ -325,9 +325,13 @@
                                 <p className="text-xl text-gray-300 mt-3">Uma saga de poderes, mistérios e confrontos</p>
                             </header>
 
-                            <div className="flex justify-center space-x-4 mb-10">
+                            <div className="flex justify-center items-center space-x-4 mb-10">
                                 <button onClick={() => setActiveTheme('city')} className={`px-6 py-2 rounded-lg font-bebas text-lg transition-all ${activeTheme === 'city' ? 'bg-cyan-500 text-slate-900 shadow-lg scale-105' : 'bg-slate-600 text-cyan-200 hover:bg-slate-500'}`}>Tema Cidade</button>
                                 <button onClick={() => setActiveTheme('jungle')} className={`px-6 py-2 rounded-lg font-bebas text-lg transition-all ${activeTheme === 'jungle' ? 'bg-lime-500 text-green-900 shadow-lg scale-105' : 'bg-green-600 text-lime-200 hover:bg-green-500'}`}>Tema Selva</button>
+                                {/* Botão Adicionado Aqui */}
+                                <a href="jogodoquadrado.html" className={`px-6 py-2 rounded-lg font-bebas text-lg transition-all ${currentTheme.buttonNavBg} ${currentTheme.buttonNavHoverBg} text-white hover:shadow-lg hover:scale-105`}>
+                                    Jogar Corrida de Quadrados
+                                </a>
                             </div>
 
                             <section className={`text-center py-8 my-8 ${currentTheme.sectionWelcomeBg} rounded-lg shadow-xl backdrop-filter backdrop-blur-sm`}>

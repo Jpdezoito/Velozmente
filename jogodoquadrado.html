@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corrida de Quadrados: Ventiladores Aprimorados!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1a202c; /* bg-gray-900 */
+            color: #e2e8f0; /* text-gray-300 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .game-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.6rem; /* Ajustado para título potencialmente mais longo */
+            color: #63b3ed; /* text-blue-400 */
+            margin-bottom: 15px;
+            text-shadow: 2px 2px #2c5282; 
+        }
+        #gameCanvas {
+            background-color: #ffffff; 
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+        .controls button, .controls select, .controls input[type="range"], .navigation-button { /* Adicionado .navigation-button */
+            background-color: #4a5568; 
+            color: white;
+            border: none;
+            padding: 9px 15px; 
+            margin: 4px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem; 
+            transition: background-color 0.3s ease;
+            font-family: 'Press Start 2P', cursive;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            vertical-align: middle;
+            text-decoration: none; /* Para o <a> parecer botão */
+            display: inline-block; /* Para o <a> parecer botão */
+        }
+        .controls button:hover, .controls select:hover, .navigation-button:hover { /* Adicionado .navigation-button:hover */
+            background-color: #2c5282; 
+        }
+        .controls {
+            margin-top: 15px;
+            background-color: #2d3748; 
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center;
+            align-items: center;
+        }
+        .control-group {
+            margin: 5px 10px;
+        }
+        .control-group label {
+            margin-right: 5px;
+            font-size: 0.8rem;
+            font-family: 'Press Start 2P', cursive;
+        }
+        .message-box {
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #38a169; 
+            color: white;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+            min-height: 35px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .instructions {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #4a5568; 
+            border-radius: 8px;
+            font-size: 0.85rem;
+            max-width: 700px; 
+            text-align: left;
+        }
+        .instructions h3 {
+            font-family: 'Press Start 2P', cursive;
+            color: #90cdf4; 
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        .instructions ul {
+            list-style-type: disc;
+            margin-left: 18px;
+        }
+        .navigation-area { /* Nova classe para a área do botão de navegação */
+            margin-bottom: 15px;
+        }
+        @media (max-width: 768px) {
+            .game-title { font-size: 1.1rem; }
+            .controls { flex-direction: column; align-items: stretch; }
+            .controls button, .controls select, .controls .control-group, .navigation-button { width: 100%; margin: 4px 0; } /* Adicionado .navigation-button */
+            .controls input[type="range"] { width: calc(100% - 30px); }
+            #gameCanvas { max-width: 100%; height: auto; }
+            .instructions { font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1 class="game-title">Corrida de Quadrados: Ventiladores Aprimorados!</h1>
+    <div class="navigation-area">
+        <a href="index.html" class="navigation-button">Voltar para HQ</a>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="controls">
+        <button id="startRaceBtn">Iniciar Corrida</button>
+        <button id="restartRaceBtn">Reiniciar Corrida</button>
+        <button id="editMapBtn">Editar Mapa</button>
+        <button id="resetMapBtn">Resetar Mapa</button>
+        <div class="control-group">
+            <label for="brushType">Pincel:</label>
+            <select id="brushType">
+                <option value="wall">Parede Fixa</option>
+                <option value="empty">Apagar</option>
+                <option value="finish">Linha de Chegada</option>
+                <option value="pivot_cw">Pivô CW em Parede</option> 
+                <option value="pivot_ccw">Pivô CCW em Parede</option> 
+                <option value="moving_wall_h">Móvel H (Simples)</option>
+                <option value="moving_wall_v">Móvel V (Simples)</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label for="speedControl">Velocidade Base:</label>
+            <input type="range" id="speedControl" min="1.5" max="6" value="3.5" step="0.1">
+            <span id="speedValue">3.5x</span>
+        </div>
+    </div>
+
+    <div id="messageBox" class="message-box">Construa paredes e adicione pivôs para criar ventiladores!</div>
+
+    <div class="instructions">
+        <h3>Instruções:</h3>
+        <ul>
+            <li><strong>Modo Edição:</strong>
+                <ul>
+                    <li>Use "Parede Fixa" para desenhar.</li>
+                    <li>Selecione "Pivô CW/CCW" e clique SOBRE uma Parede (Fixa ou Móvel) para torná-la um ventilador.</li>
+                    <li>Paredes Fixas conectadas ao pivô formarão um braço. Paredes Móveis girarão individualmente.</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const messageBox = document.getElementById('messageBox');
+
+        const startRaceBtn = document.getElementById('startRaceBtn');
+        const restartRaceBtn = document.getElementById('restartRaceBtn');
+        const editMapBtn = document.getElementById('editMapBtn');
+        const resetMapBtn = document.getElementById('resetMapBtn');
+        const brushTypeSelect = document.getElementById('brushType');
+        const speedControl = document.getElementById('speedControl');
+        const speedValueDisplay = document.getElementById('speedValue');
+
+        const TILE_SIZE = 20; 
+        const ROWS = 25;      
+        const COLS = 35;      
+
+        canvas.width = COLS * TILE_SIZE;
+        canvas.height = ROWS * TILE_SIZE;
+
+        const EMPTY = 0, WALL = 1, FINISH_LINE = 2, 
+              MOVING_WALL_H = 3, MOVING_WALL_V = 4,
+              PIVOT_CW = 7, PIVOT_CCW = 8,
+              PART_OF_FAN = 9; 
+
+        let mapGrid = []; 
+        let squares = [];
+        let dynamicElements = []; 
+
+        let gameMode = 'edit'; 
+        let animationFrameId;
+        let isPainting = false; 
+        const EPSILON = 0.001; 
+
+        let selectedSquare = null;
+        let isDraggingSquare = false;
+        let dragOffsetX, dragOffsetY;
+        let globalSpeedMultiplier = 3.5; 
+
+        class Square {
+             constructor(x, y, color, id) {
+                this.id = id;
+                this.initialGridX = x; 
+                this.initialGridY = y;
+                this.x = this.initialGridX * TILE_SIZE + TILE_SIZE / 4; 
+                this.y = this.initialGridY * TILE_SIZE + TILE_SIZE / 4;
+                this.raceStartX = this.x; 
+                this.raceStartY = this.y;
+                this.size = TILE_SIZE / 2;
+                this.color = color;
+                this.vx = 0; 
+                this.vy = 0;          
+                this.finished = false;
+                
+                this.restitution = 0.98;     
+                this.friction = 0.0001;      
+                this.airResistance = 1.0;    
+                this.baseImpulse = 4.0;      
+
+                this.minSpeedMagnitude = 2.0; 
+                this.accelerationFactor = 0.03; 
+            }
+            
+            get initialSpeedMagnitude() { return this.baseImpulse * globalSpeedMultiplier; }
+            get currentMinSpeed() { return this.minSpeedMagnitude * globalSpeedMultiplier; }
+
+            reset(mode = 'initialGrid') { 
+                if (mode === 'initialGrid') {
+                    this.x = this.initialGridX * TILE_SIZE + TILE_SIZE / 4;
+                    this.y = this.initialGridY * TILE_SIZE + TILE_SIZE / 4;
+                } else if (mode === 'currentRaceStart') {
+                    this.x = this.raceStartX;
+                    this.y = this.raceStartY;
+                }
+                
+                const angle = Math.random() * Math.PI * 2; 
+                this.vx = Math.cos(angle) * this.initialSpeedMagnitude; 
+                this.vy = Math.sin(angle) * this.initialSpeedMagnitude; 
+                this.finished = false;
+            }
+            
+            setInitialPosition(pixelX, pixelY) {
+                this.x = Math.max(0, Math.min(pixelX - this.size / 2, canvas.width - this.size));
+                this.y = Math.max(0, Math.min(pixelY - this.size / 2, canvas.height - this.size));
+                this.raceStartX = this.x;
+                this.raceStartY = this.y;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(this.x, this.y, this.size, this.size);
+
+                if (gameMode === 'edit' && (selectedSquare === this || 
+                    (isMouseOver(canvas, event, this.x, this.y, this.size, this.size) && !selectedSquare && !isPainting) ) ) {
+                    ctx.strokeStyle = 'gold';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(this.x - 1, this.y - 1, this.size + 2, this.size + 2);
+                }
+            }
+
+            applyForce(fx, fy) {
+                this.vx += fx;
+                this.vy += fy;
+            }
+            
+            update() {
+                if (this.finished || gameMode !== 'race') return;
+                
+                this.vx *= this.airResistance; 
+                this.vy *= this.airResistance;
+
+                const currentSpeedMag = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (currentSpeedMag < this.currentMinSpeed && currentSpeedMag > EPSILON) {
+                    const factor = (this.currentMinSpeed / currentSpeedMag -1) * this.accelerationFactor + 1;
+                    this.vx *= factor;
+                    this.vy *= factor;
+                } else if (currentSpeedMag < EPSILON && Math.random() < 0.1) { 
+                     const angle = Math.random() * Math.PI * 2;
+                     this.vx = Math.cos(angle) * this.currentMinSpeed * 0.5;
+                     this.vy = Math.sin(angle) * this.currentMinSpeed * 0.5;
+                }
+                
+                this.x += this.vx;
+                this.checkAndResolveCollisions('x');
+                this.y += this.vy;
+                this.checkAndResolveCollisions('y');
+                
+                if (this.x < 0) { this.x = EPSILON; this.vx *= -this.restitution; } 
+                if (this.x + this.size > canvas.width) { this.x = canvas.width - this.size - EPSILON; this.vx *= -this.restitution; }
+                if (this.y < 0) { this.y = EPSILON; this.vy *= -this.restitution; }
+                if (this.y + this.size > canvas.height) { this.y = canvas.height - this.size - EPSILON; this.vy *= -this.restitution; }
+                
+                squares.forEach(otherSquare => {
+                    if (this === otherSquare || otherSquare.finished) return;
+                    if (this.x < otherSquare.x + otherSquare.size && this.x + this.size > otherSquare.x &&
+                        this.y < otherSquare.y + otherSquare.size && this.y + this.size > otherSquare.y) {
+                        const dx = (this.x + this.size / 2) - (otherSquare.x + otherSquare.size / 2);
+                        const dy = (this.y + this.size / 2) - (otherSquare.y + otherSquare.size / 2);
+                        const distance = Math.sqrt(dx * dx + dy * dy) || EPSILON;
+                        const minDistance = this.size; 
+
+                        const overlap = (minDistance - distance) / distance * 0.51; 
+                        this.x += dx * overlap;
+                        this.y += dy * overlap;
+                        otherSquare.x -= dx * overlap;
+                        otherSquare.y -= dy * overlap;
+
+                        const angle = Math.atan2(dy, dx);
+                        const sin = Math.sin(angle);
+                        const cos = Math.cos(angle);
+
+                        let v1 = { x: this.vx * cos + this.vy * sin, y: this.vy * cos - this.vx * sin };
+                        let v2 = { x: otherSquare.vx * cos + otherSquare.vy * sin, y: otherSquare.vy * cos - otherSquare.vx * sin };
+                        
+                        let v1xFinal = (v1.x * (this.size - otherSquare.size) + 2 * otherSquare.size * v2.x) / (this.size + otherSquare.size);
+                        let v2xFinal = (v2.x * (otherSquare.size - this.size) + 2 * this.size * v1.x) / (this.size + otherSquare.size);
+                        
+                        v1.x = v1xFinal * 1.02; 
+                        v2.x = v2xFinal * 1.02;
+
+                        this.vx = v1.x * cos - v1.y * sin;
+                        this.vy = v1.y * cos + v1.x * sin;
+                        otherSquare.vx = v2.x * cos - v2.y * sin;
+                        otherSquare.vy = v2.y * cos + v2.x * sin;
+                    }
+                });
+
+                const tileCol = Math.floor((this.x + this.size / 2) / TILE_SIZE);
+                const tileRow = Math.floor((this.y + this.size / 2) / TILE_SIZE);
+                if (tileCol >= 0 && tileCol < COLS && tileRow >= 0 && tileRow < ROWS && mapGrid[tileRow][tileCol] === FINISH_LINE) {
+                    this.finished = true; gameMode = 'gameover';
+                    let winnerName = this.id; 
+                    if (this.color === 'red') winnerName = 'Vermelho';
+                    else if (this.color === '#3b82f6') winnerName = 'Azul';
+                    else if (this.color === '#10b981') winnerName = 'Verde';
+                    else if (this.color === '#8b5cf6') winnerName = 'Roxo';
+                    messageBox.textContent = `${winnerName} venceu!`;
+                    messageBox.style.backgroundColor = '#38a169'; 
+                    stopGameLoop(); 
+                }
+            }
+
+            checkAndResolveCollisions(axis) {
+                for (const dynEl of dynamicElements) {
+                    if (dynEl.isCollidingWithSquare(this, axis)) { 
+                        dynEl.resolveCollisionWithSquare(this, axis); 
+                        return; 
+                    }
+                }
+
+                let checkCoord, startOtherCoord, endOtherCoord;
+                let pos = (axis === 'x') ? this.x : this.y;
+                let speed = (axis === 'x') ? this.vx : this.vy;
+
+                if (Math.abs(speed) < EPSILON) return; 
+
+                if (speed > 0) checkCoord = Math.floor((pos + this.size) / TILE_SIZE);
+                else checkCoord = Math.floor(pos / TILE_SIZE);
+                
+                if (axis === 'x') {
+                    startOtherCoord = Math.floor(this.y / TILE_SIZE);
+                    endOtherCoord = Math.floor((this.y + this.size - EPSILON) / TILE_SIZE);
+                } else { 
+                    startOtherCoord = Math.floor(this.x / TILE_SIZE);
+                    endOtherCoord = Math.floor((this.x + this.size - EPSILON) / TILE_SIZE);
+                }
+
+                for (let other = startOtherCoord; other <= endOtherCoord; other++) {
+                    let r = (axis === 'x') ? other : checkCoord;
+                    let c = (axis === 'x') ? checkCoord : other;
+
+                    if (r < 0 || r >= ROWS || c < 0 || c >= COLS) continue;
+                    
+                    if (mapGrid[r][c] === WALL) { 
+                        if (axis === 'x') {
+                            if (speed > 0) this.x = c * TILE_SIZE - this.size - EPSILON;
+                            else this.x = (c + 1) * TILE_SIZE + EPSILON;
+                            this.vx *= -this.restitution;
+                            this.vy *= (1 - this.friction);
+                        } else { 
+                            if (speed > 0) this.y = r * TILE_SIZE - this.size - EPSILON;
+                            else this.y = (r + 1) * TILE_SIZE + EPSILON;
+                            this.vy *= -this.restitution;
+                            this.vx *= (1 - this.friction);
+                        }
+                        return; 
+                    }
+                }
+            }
+        }
+        
+        class BaseDynamicElement {
+            constructor(gridX, gridY, type) {
+                this.gridX = gridX; 
+                this.gridY = gridY;
+                this.type = type;
+                this.baseSpeed = 0.6; 
+                this.baseRotationSpeed = 0.035;
+            }
+            get speed() { return this.baseSpeed * globalSpeedMultiplier; }
+            get rotationSpeed() { return this.baseRotationSpeed * globalSpeedMultiplier; }
+            
+            update() {}
+            draw() {}
+            isCollidingWithSquare(square, axis) { return false; }
+            resolveCollisionWithSquare(square, axis) {} 
+            applyInteraction(square, axis) {} 
+        }
+
+        class MovingWallElement extends BaseDynamicElement {
+             constructor(gridX, gridY, type) {
+                super(gridX, gridY, type);
+                this.x = gridX * TILE_SIZE; 
+                this.y = gridY * TILE_SIZE;
+                this.color = (type === MOVING_WALL_H) ? '#f59e0b' : '#60a5fa';
+                this.direction = 1;
+                this.range = 3 * TILE_SIZE;
+                this.initialX = this.x;
+                this.initialY = this.y;
+            }
+
+            update() {
+                if (this.type === MOVING_WALL_H) {
+                    this.x += this.speed * this.direction;
+                    if (Math.abs(this.x - this.initialX) >= this.range) {
+                        this.direction *= -1;
+                        this.x = this.initialX + this.range * Math.sign(this.x - this.initialX);
+                    }
+                } else if (this.type === MOVING_WALL_V) {
+                    this.y += this.speed * this.direction;
+                    if (Math.abs(this.y - this.initialY) >= this.range) {
+                        this.direction *= -1;
+                        this.y = this.initialY + this.range * Math.sign(this.y - this.initialY);
+                    }
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, TILE_SIZE, TILE_SIZE);
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 0.5;
+                ctx.strokeRect(this.x, this.y, TILE_SIZE, TILE_SIZE);
+            }
+
+            isCollidingWithSquare(square, axis) {
+                const sq = { x: square.x, y: square.y, width: square.size, height: square.size };
+                const wall = { x: this.x, y: this.y, width: TILE_SIZE, height: TILE_SIZE };
+                
+                return sq.x < wall.x + wall.width && sq.x + sq.width > wall.x &&
+                       sq.y < wall.y + wall.height && sq.y + sq.height > wall.y;
+            }
+            
+            resolveCollisionWithSquare(square, axis) {
+                 if (axis === 'x') {
+                    if (square.vx > 0) square.x = this.x - square.size - EPSILON;
+                    else if (square.vx < 0) square.x = this.x + TILE_SIZE + EPSILON;
+                    square.vx *= -square.restitution;
+                    square.vy *= (1 - square.friction);
+                } else { 
+                    if (square.vy > 0) square.y = this.y - square.size - EPSILON;
+                    else if (square.vy < 0) square.y = this.y + TILE_SIZE + EPSILON;
+                    square.vy *= -square.restitution;
+                    square.vx *= (1 - square.friction);
+                }
+            }
+        }
+
+        class WallFanElement extends BaseDynamicElement {
+            constructor(pivotGridX, pivotGridY, type, isSingleTileFan = false) { 
+                super(pivotGridX, pivotGridY, type); 
+                this.pivotX = pivotGridX * TILE_SIZE + TILE_SIZE / 2; 
+                this.pivotY = pivotGridY * TILE_SIZE + TILE_SIZE / 2;
+                this.angle = 0;
+                this.armSegments = []; 
+                this.flingForceMultiplier = 1.6; 
+                this.color = '#7c3aed'; 
+                this.isSingleTileFan = isSingleTileFan; 
+            }
+
+            buildArm(segments) { 
+                this.armSegments = segments.map(seg => ({
+                    offsetX: (seg.col * TILE_SIZE + TILE_SIZE / 2) - this.pivotX,
+                    offsetY: (seg.row * TILE_SIZE + TILE_SIZE / 2) - this.pivotY,
+                }));
+            }
+            
+            update() {
+                if (this.type === PIVOT_CW) this.angle += this.rotationSpeed;
+                else if (this.type === PIVOT_CCW) this.angle -= this.rotationSpeed;
+            }
+
+            draw() {
+                
+                ctx.fillStyle = this.isSingleTileFan ? this.color : 'darkmagenta'; 
+                ctx.beginPath();
+                ctx.arc(this.pivotX, this.pivotY, TILE_SIZE / (this.isSingleTileFan ? 2.1 : 3), 0, Math.PI * 2); 
+                ctx.fill();
+
+                this.armSegments.forEach(seg => {
+                    ctx.save();
+                    ctx.translate(this.pivotX, this.pivotY); 
+                    ctx.rotate(this.angle); 
+                    
+                    ctx.fillStyle = this.color;
+                    ctx.fillRect(seg.offsetX - TILE_SIZE / 2, seg.offsetY - TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 0.5;
+                    ctx.strokeRect(seg.offsetX - TILE_SIZE / 2, seg.offsetY - TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
+                    
+                    ctx.restore();
+                });
+            }
+            
+            isCollidingWithSquare(square, axis) { 
+                for (const seg of this.armSegments) {
+                    const cosA = Math.cos(this.angle);
+                    const sinA = Math.sin(this.angle);
+                    const rotatedSegCenterX = this.pivotX + (seg.offsetX * cosA - seg.offsetY * sinA);
+                    const rotatedSegCenterY = this.pivotY + (seg.offsetX * sinA + seg.offsetY * cosA);
+
+                    const segRect = {
+                        x: rotatedSegCenterX - TILE_SIZE / 2,
+                        y: rotatedSegCenterY - TILE_SIZE / 2,
+                        width: TILE_SIZE,
+                        height: TILE_SIZE
+                    };
+
+                    if (square.x < segRect.x + segRect.width && square.x + square.size > segRect.x &&
+                        square.y < segRect.y + segRect.height && square.y + square.size > segRect.y) {
+                        return true; 
+                    }
+                }
+                return false;
+            }
+
+            resolveCollisionWithSquare(square, axis) {
+                 for (const seg of this.armSegments) {
+                    const cosA = Math.cos(this.angle);
+                    const sinA = Math.sin(this.angle);
+                    const rotatedSegCenterX = this.pivotX + (seg.offsetX * cosA - seg.offsetY * sinA);
+                    const rotatedSegCenterY = this.pivotY + (seg.offsetX * sinA + seg.offsetY * cosA);
+                    
+                    const segRect = {
+                        x: rotatedSegCenterX - TILE_SIZE / 2, y: rotatedSegCenterY - TILE_SIZE / 2,
+                        width: TILE_SIZE, height: TILE_SIZE
+                    };
+
+                    if (square.x < segRect.x + segRect.width && square.x + square.size > segRect.x &&
+                        square.y < segRect.y + segRect.height && square.y + square.size > segRect.y) {
+                        
+                        
+                        const overlapResolutionFactor = 1.05; 
+                        if (axis === 'x') {
+                            if (square.vx > 0) square.x = segRect.x - square.size - EPSILON;
+                            else if (square.vx < 0) square.x = segRect.x + TILE_SIZE + EPSILON;
+                            square.vx *= -square.restitution * 0.6; 
+                        } else {
+                            if (square.vy > 0) square.y = segRect.y - square.size - EPSILON;
+                            else if (square.vy < 0) square.y = segRect.y + TILE_SIZE + EPSILON;
+                            square.vy *= -square.restitution * 0.6;
+                        }
+                        this.applyInteraction(square, axis, rotatedSegCenterX, rotatedSegCenterY); 
+                        return;
+                    }
+                }
+            }
+
+            applyInteraction(square, axis, segContactX, segContactY) { 
+                const rdx = square.x + square.size / 2 - this.pivotX; 
+                const rdy = square.y + square.size / 2 - this.pivotY;
+                
+
+                
+                const contactOffsetX = segContactX - this.pivotX;
+                const contactOffsetY = segContactY - this.pivotY;
+                const contactDist = Math.sqrt(contactOffsetX*contactOffsetX + contactOffsetY*contactOffsetY) || EPSILON;
+
+
+                const tangentialSpeedAtContact = this.rotationSpeed * contactDist * ( (this.type === PIVOT_CW) ? 1 : -1 );
+                
+                
+                const flingVX = -contactOffsetY / contactDist * tangentialSpeedAtContact * this.flingForceMultiplier;
+                const flingVY = contactOffsetX / contactDist * tangentialSpeedAtContact * this.flingForceMultiplier;
+                
+                square.applyForce(flingVX, flingVY);
+            }
+        }
+
+
+        function initMap() {
+            mapGrid = [];
+            for (let r = 0; r < ROWS; r++) {
+                mapGrid[r] = [];
+                for (let c = 0; c < COLS; c++) {
+                    if (r === 0 || r === ROWS - 1 || c === 0 || c === COLS - 1) {
+                        mapGrid[r][c] = WALL;
+                    } else {
+                        mapGrid[r][c] = EMPTY;
+                    }
+                }
+            }
+            for(let r = Math.floor(ROWS/3); r < Math.floor(ROWS * 2/3) ; r++) { 
+                if (r > 0 && r < ROWS -1 && COLS-2 > 0 && COLS-2 < COLS -1) { 
+                     mapGrid[r][COLS-2] = FINISH_LINE;
+                }
+            }
+        }
+
+        function initSquares() {
+            const yPositions = [ROWS / 5, ROWS * 2 / 5, ROWS * 3 / 5, ROWS * 4 / 5];
+            squares = [ 
+                new Square(2, Math.floor(yPositions[0]), 'red', 'P1'), 
+                new Square(2, Math.floor(yPositions[1]), '#3b82f6', 'P2'), 
+                new Square(2, Math.floor(yPositions[2]), '#10b981', 'P3'), 
+                new Square(2, Math.floor(yPositions[3]), '#8b5cf6', 'P4')  
+            ];
+        }
+        
+        function parseMapForDynamicElements() {
+            dynamicElements = []; 
+            const processedPivots = new Set(); 
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const originalTileType = mapGrid[r][c]; 
+                    
+                    if (originalTileType === MOVING_WALL_H || originalTileType === MOVING_WALL_V) {
+                        dynamicElements.push(new MovingWallElement(c, r, originalTileType));
+                    } else if ((originalTileType === PIVOT_CW || originalTileType === PIVOT_CCW) && !processedPivots.has(`${c},${r}`)) {
+                        
+                        
+                        let underlyingTileType = EMPTY;
+                        
+
+                        const fan = new WallFanElement(c, r, originalTileType);
+                        const armSegmentsToBuild = [];
+                        const q = [{x: c, y: r}]; 
+                        const visitedForThisFan = new Set([`${c},${r}`]);
+                        processedPivots.add(`${c},${r}`); 
+
+                        
+                        armSegmentsToBuild.push({col: c, row: r});
+                        mapGrid[r][c] = PART_OF_FAN; 
+
+                        
+                        while (q.length > 0) {
+                            const curr = q.shift();
+                            const directions = [{dx:0,dy:-1},{dx:0,dy:1},{dx:-1,dy:0},{dx:1,dy:0}];
+                            for (const dir of directions) {
+                                const nextC = curr.x + dir.dx;
+                                const nextR = curr.y + dir.dy;
+                                if (nextC >= 0 && nextC < COLS && nextR >= 0 && nextR < ROWS &&
+                                    mapGrid[nextR][nextC] === WALL && !visitedForThisFan.has(`${nextC},${nextR}`)) {
+                                    visitedForThisFan.add(`${nextC},${nextR}`);
+                                    armSegmentsToBuild.push({col: nextC, row: nextR});
+                                    mapGrid[nextR][nextC] = PART_OF_FAN; 
+                                    q.push({x: nextC, y: nextR});
+                                }
+                            }
+                        }
+                        fan.buildArm(armSegmentsToBuild);
+                        if (fan.armSegments.length > 0) {
+                            dynamicElements.push(fan);
+                        }
+                    }
+                }
+            }
+        }
+
+        function drawMap() {
+            ctx.fillStyle = '#ffffff'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const tileType = mapGrid[r][c];
+                    
+                    
+                    if (tileType === WALL || tileType === FINISH_LINE) { 
+                        ctx.beginPath();
+                        ctx.rect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                        if (tileType === WALL) ctx.fillStyle = '#4a5568';
+                        else if (tileType === FINISH_LINE) ctx.fillStyle = '#38a169';
+                        ctx.fill();
+                    } else if (gameMode === 'edit') {
+                        if (tileType === MOVING_WALL_H) {
+                             ctx.fillStyle = 'rgba(245, 158, 11, 0.5)'; 
+                             ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                        } else if (tileType === MOVING_WALL_V) {
+                            ctx.fillStyle = 'rgba(96, 165, 250, 0.5)'; 
+                            ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                        } else if (tileType === PIVOT_CW || tileType === PIVOT_CCW) {
+                            
+                            ctx.fillStyle = 'rgba(239, 68, 68, 0.8)'; 
+                            ctx.beginPath();
+                            ctx.arc(c * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE / 3, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    }
+
+                    if (gameMode === 'edit') {
+                        ctx.strokeStyle = '#d1d5db'; 
+                        ctx.strokeRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    }
+                }
+            }
+            dynamicElements.forEach(el => el.draw());
+        }
+        
+        function getMousePos(canvasEl, evt) {
+            const rect = canvasEl.getBoundingClientRect();
+            const scaleX = canvasEl.width / rect.width;
+            const scaleY = canvasEl.height / rect.height;
+            return {
+                x: (evt.clientX - rect.left) * scaleX,
+                y: (evt.clientY - rect.top) * scaleY
+            };
+        }
+
+        function isMouseOver(canvasElement, event, x, y, width, height) {
+            if (!event && gameMode === 'edit') event = window.event; 
+            if (!event) return false; 
+            const mousePos = getMousePos(canvasElement, event);
+            return mousePos.x > x && mousePos.x < x + width && mousePos.y > y && mousePos.y < y + height;
+        }
+
+        function gameLoop() { 
+            drawMap();
+            
+            if (gameMode === 'race') {
+                dynamicElements.forEach(el => el.update());
+            }
+
+            squares.forEach(square => {
+                if (gameMode === 'race') {
+                    square.update();
+                }
+                square.draw(); 
+            });
+
+            if (gameMode === 'edit') {
+                let onSquare = false;
+                for (const sq of squares) {
+                    if (isMouseOver(canvas, window.event, sq.x, sq.y, sq.size, sq.size)) {
+                        onSquare = true;
+                        break;
+                    }
+                }
+                canvas.style.cursor = onSquare ? 'grab' : 'crosshair';
+                if (isDraggingSquare) canvas.style.cursor = 'grabbing';
+            } else {
+                canvas.style.cursor = 'default';
+            }
+
+            if (gameMode === 'race' && squares.every(s => s.finished) && !messageBox.textContent.includes("venceu")) {
+                gameMode = 'gameover';
+                messageBox.textContent = "Empate ou todos terminaram!";
+                messageBox.style.backgroundColor = '#4299e1'; 
+            }
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function stopGameLoop() {
+            cancelAnimationFrame(animationFrameId);
+        }
+
+        function paintTile(event) {
+            if (isDraggingSquare) return; 
+
+            const mousePos = getMousePos(canvas, event);
+            const col = Math.floor(mousePos.x / TILE_SIZE);
+            const row = Math.floor(mousePos.y / TILE_SIZE);
+
+            if (row >= 0 && row < ROWS && col >= 0 && col < COLS) {
+                const currentTileOnGrid = mapGrid[row][col];
+                const brushValue = brushTypeSelect.value;
+                let newTileType = currentTileOnGrid; 
+
+                switch (brushValue) {
+                    case 'wall': newTileType = WALL; break;
+                    case 'empty': newTileType = EMPTY; break;
+                    case 'finish': newTileType = FINISH_LINE; break;
+                    case 'moving_wall_h': newTileType = MOVING_WALL_H; break;
+                    case 'moving_wall_v': newTileType = MOVING_WALL_V; break;
+                    case 'pivot_cw': 
+                        if (currentTileOnGrid === WALL || currentTileOnGrid === MOVING_WALL_H || currentTileOnGrid === MOVING_WALL_V || currentTileOnGrid === PIVOT_CCW) {
+                            newTileType = PIVOT_CW;
+                        }
+                        break;
+                    case 'pivot_ccw': 
+                        if (currentTileOnGrid === WALL || currentTileOnGrid === MOVING_WALL_H || currentTileOnGrid === MOVING_WALL_V || currentTileOnGrid === PIVOT_CW) {
+                            newTileType = PIVOT_CCW;
+                        }
+                        break;
+                }
+                
+                
+                if (newTileType === EMPTY && (currentTileOnGrid === PIVOT_CW || currentTileOnGrid === PIVOT_CCW || currentTileOnGrid === PART_OF_FAN || currentTileOnGrid === MOVING_WALL_H || currentTileOnGrid === MOVING_WALL_V)) {
+                    dynamicElements = dynamicElements.filter(el => !(el.gridX === col && el.gridY === row));
+                     
+                     
+                }
+                
+                
+                if (mapGrid[row][col] === WALL && (row === 0 || row === ROWS - 1 || col === 0 || col === COLS - 1) && newTileType !== EMPTY && newTileType !== PIVOT_CW && newTileType !== PIVOT_CCW) {
+                    return;
+                }
+                mapGrid[row][col] = newTileType;
+            }
+        }
+        
+        speedControl.addEventListener('input', (event) => {
+            globalSpeedMultiplier = parseFloat(event.target.value);
+            speedValueDisplay.textContent = `${globalSpeedMultiplier.toFixed(1)}x`;
+        });
+
+        canvas.addEventListener('mousedown', (event) => {
+            if (gameMode !== 'edit') return;
+            
+            const mousePos = getMousePos(canvas, event);
+
+            for (const sq of squares) {
+                if (mousePos.x > sq.x && mousePos.x < sq.x + sq.size &&
+                    mousePos.y > sq.y && mousePos.y < sq.y + sq.size) {
+                    selectedSquare = sq;
+                    isDraggingSquare = true;
+                    dragOffsetX = mousePos.x - sq.x;
+                    dragOffsetY = mousePos.y - sq.y;
+                    canvas.style.cursor = 'grabbing';
+                    return; 
+                }
+            }
+            isPainting = true;
+            paintTile(event); 
+        });
+
+        canvas.addEventListener('mousemove', (event) => {
+            if (gameMode !== 'edit') return;
+
+            if (isDraggingSquare && selectedSquare) {
+                const mousePos = getMousePos(canvas, event);
+                selectedSquare.setInitialPosition(mousePos.x - dragOffsetX + selectedSquare.size / 2, mousePos.y - dragOffsetY + selectedSquare.size / 2);
+            } else if (isPainting) {
+                paintTile(event);
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => { 
+            if (gameMode !== 'edit') return;
+            isPainting = false; 
+            isDraggingSquare = false;
+            selectedSquare = null;
+        });
+        canvas.addEventListener('mouseleave', () => { 
+             if (gameMode !== 'edit') return;
+            if (isDraggingSquare) { 
+                isDraggingSquare = false;
+                selectedSquare = null;
+            }
+        });
+
+        startRaceBtn.addEventListener('click', () => {
+            if (gameMode === 'race') return; 
+            gameMode = 'race';
+            messageBox.textContent = "Corrida CAÓTICA em andamento!";
+            messageBox.style.backgroundColor = '#4299e1'; 
+            
+            
+            
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    if(mapGrid[r][c] === PART_OF_FAN) mapGrid[r][c] = WALL; 
+                }
+            }
+            parseMapForDynamicElements(); 
+
+            squares.forEach(s => {
+                s.raceStartX = s.x; 
+                s.raceStartY = s.y;
+                s.reset('keepPositionForRaceStart'); 
+            }); 
+            
+            if (animationFrameId) cancelAnimationFrame(animationFrameId); 
+            gameLoop();
+        });
+        
+        restartRaceBtn.addEventListener('click', () => { 
+            if (gameMode === 'edit' && squares.every(s => s.x === s.initialGridX * TILE_SIZE + TILE_SIZE / 4 && s.y === s.initialGridY * TILE_SIZE + TILE_SIZE / 4) ) { 
+                messageBox.textContent = "Inicie uma corrida primeiro ou edite as posições!";
+                messageBox.style.backgroundColor = '#f56565'; 
+                return;
+            }
+            gameMode = 'race'; 
+            messageBox.textContent = "Corrida REINICIADA!";
+            messageBox.style.backgroundColor = '#4299e1'; 
+            squares.forEach(s => {
+                s.reset('currentRaceStart'); 
+            });
+            dynamicElements.forEach(el => {
+                if (el instanceof WallFanElement) el.angle = 0; 
+                else if (el instanceof MovingWallElement) { 
+                    el.x = el.initialX; el.y = el.initialY; el.direction = 1;
+                }
+            });
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            gameLoop();
+        });
+
+        editMapBtn.addEventListener('click', () => {
+            gameMode = 'edit';
+            messageBox.textContent = "Modo de Edição. Crie o caos!";
+            messageBox.style.backgroundColor = '#ecc94b'; 
+            stopGameLoop(); 
+            
+            
+            
+            dynamicElements.forEach(el => {
+                if (el instanceof WallFanElement) {
+                    mapGrid[el.gridY][el.gridX] = el.type; 
+                    el.armSegments.forEach(seg => {
+                        
+                        const originalSegCol = Math.round((el.pivotX + seg.offsetX - TILE_SIZE/2) / TILE_SIZE);
+                        const originalSegRow = Math.round((el.pivotY + seg.offsetY - TILE_SIZE/2) / TILE_SIZE);
+                        if (originalSegRow !== el.gridY || originalSegCol !== el.gridX) { 
+                           if(originalSegRow >=0 && originalSegRow < ROWS && originalSegCol >=0 && originalSegCol < COLS)
+                            mapGrid[originalSegRow][originalSegCol] = WALL;
+                        }
+                    });
+                } else if (el instanceof MovingWallElement) {
+                    mapGrid[el.gridY][el.gridX] = el.type; 
+                }
+            });
+            dynamicElements = []; 
+
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            gameLoop(); 
+        });
+        resetMapBtn.addEventListener('click', () => {
+            initMap(); 
+            initSquares(); 
+            dynamicElements = []; 
+            gameMode = 'edit'; 
+            globalSpeedMultiplier = 3.5; 
+            speedControl.value = globalSpeedMultiplier;
+            speedValueDisplay.textContent = `${globalSpeedMultiplier.toFixed(1)}x`;
+            messageBox.textContent = "Mapa e posições resetados. Modo de Edição.";
+            messageBox.style.backgroundColor = '#ecc94b'; 
+            stopGameLoop();
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            gameLoop();
+        });
+
+        // Inicialização
+        initMap();
+        initSquares();
+        gameLoop(); 
+        speedControl.value = globalSpeedMultiplier; 
+        speedValueDisplay.textContent = `${globalSpeedMultiplier.toFixed(1)}x`;
+        messageBox.textContent = "Modo de Edição. Use o pincel ou arraste os quadrados!";
+        messageBox.style.backgroundColor = '#ecc94b'; 
+        canvas.style.cursor = 'crosshair';
+    </script>
+
+</body>
+</html>
