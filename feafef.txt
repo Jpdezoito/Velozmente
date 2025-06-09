@@ -1,0 +1,49 @@
+Fase 1: Aprimorando o NLU Atual e Introduzindo Captura de Tela
+
+Melhorar o Módulo NLU Atual (Naive Bayes):
+
+Pré-processamento Avançado: Implementar stemming (ou lematização) no nlu_module.py para o modelo Naive Bayes existente. Isso pode melhorar a precisão do reconhecimento de intenções com o sistema atual antes de uma mudança maior.
+Validação Cruzada: (Já discutimos) Adicionar ao nlu_module.py para termos uma medida da qualidade do modelo atual.
+Expandir dados_treinamento.txt: Continuar adicionando mais exemplos e variações de frases para as intenções atuais. Este é um trabalho contínuo.
+Funcionalidade Básica de Tela:
+
+Captura de Tela: Adicionar a capacidade de capturar a tela usando mss (conforme sugerido como "Urgente" no seu arquivo). Integrar isso ao assistente_gui.py.
+Análise de Tela com OCR: Usar pytesseract para extrair texto da imagem capturada.
+Fase 2: Transição para NLU Multimodal e Expansão de Interações Online/PC
+
+Novo NLU com Suporte Multimodal (Texto e Imagem):
+
+Integrar Modelo CLIP: Refatorar o nlu_module.py para usar um modelo como o CLIP para processar tanto texto quanto imagens. Isso é uma mudança "Urgente" e significativa.
+Adaptar Treinamento/Dados para CLIP: Ajustar o formato dos dados de treinamento para incluir exemplos que combinem texto e imagens (especialmente para comandos relacionados à tela).
+Melhorias na Pesquisa Online e Interação com PC:
+
+APIs Oficiais para Pesquisa: Atualizar pesquisador.py para usar APIs como Google Custom Search JSON API.
+Expandir Acesso a Arquivos Locais: No media_module.py ou similar, permitir acesso a outros tipos de arquivos além de música.
+Comandos de Sistema: Permitir interações como "abrir aplicativo X" ou "verificar uso de CPU" usando psutil e subprocess.
+Fase 3: Recursos Avançados, Celular e Aprendizado Dinâmico
+
+Integração com Celular (ADB):
+
+Implementar a comunicação com dispositivos Android conectados via ADB para executar comandos básicos.
+Aprendizado Dinâmico e Interface:
+
+Permitir que o assistente aprenda novos comandos (inicialmente baseados em texto, depois expandir para multimodal) através da interface gráfica.
+Atualizar assistente_gui.py para suportar novas funcionalidades (botões, exibição de imagens, etc.).
+Análise de Tela Avançada e Outras Modalidades:
+
+Detecção de Objetos na Tela: Introduzir modelos como YOLOv5 para identificar objetos em capturas de tela.
+Suporte a Áudio (Avançado): Explorar modelos como Wav2Vec para processamento de áudio mais robusto.
+Banco de Dados Multimodal e Retreinamento:
+
+Salvar exemplos de aprendizado multimodal em um banco de dados.
+Implementar um sistema de retreinamento (ou fine-tuning) para o modelo NLU principal (ex: CLIP).
+Considerações Importantes (do seu arquivo oi.txt ):
+
+Recursos Computacionais: Lembre-se que modelos como CLIP e YOLOv5 podem exigir GPUs para bom desempenho.
+Segurança: Validar entradas, especialmente de fontes externas ou capturas, é crucial.
+Testes: Adicionar testes unitários para cada funcionalidade.
+Ponto de Partida Sugerido:
+
+Eu sugiro começarmos pela Fase 1, item 1: "Melhorar o Módulo NLU Atual (Naive Bayes)", implementando o Pré-processamento Avançado (Stemming). Isso nos permite melhorar o que já temos e construir uma base sólida antes de saltar para a complexidade do CLIP.
+
+O que você acha deste roteiro e do ponto de partida? Se concordar, podemos começar detalhando a implementação do stemming no seu nlu_module.py atual.

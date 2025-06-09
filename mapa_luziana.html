@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Detalhado de Luziana: Ruas e Pontos de Interesse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos personalizados para o mapa */
+        body {
+            font-family: 'Inter', sans-serif; /* Define a fonte Inter */
+            background-color: #f0f4f8; /* Cor de fundo suave */
+            display: flex;
+            flex-direction: column; /* Coluna para o mapa e o botão global */
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .map-container {
+            width: 100%;
+            max-width: 1200px; /* Largura máxima para desktop */
+            aspect-ratio: 16 / 10; /* Proporção de aspecto para o mapa */
+            background-color: #a3e635; /* Cor base para a vegetação/terra verde */
+            border-radius: 1.5rem; /* Cantos arredondados */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); /* Sombra suave */
+            position: relative; /* Para posicionar elementos internos */
+            overflow: hidden; /* Garante que elementos não transbordem */
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 1rem; /* Espaço entre o mapa e o botão */
+        }
+
+        .map-area {
+            flex-grow: 1; /* Ocupa o espaço restante */
+            position: relative;
+            background-color: #a3e635; /* Base verde para a área do mapa */
+            /* Representação da Floresta Vasta 'A Mata Velada' */
+            background: radial-gradient(circle at 10% 10%, #689f38 0%, #a3e635 60%); /* Verde mais escuro para a borda da floresta */
+            cursor: pointer; /* Indica que a área é clicável */
+        }
+
+        /* Montanhas (como elevações no mapa aéreo) */
+        .mountain-aerial {
+            background-color: #78350f; /* Cor das montanhas */
+            position: absolute;
+            opacity: 0.9;
+            border-radius: 50%; /* Formato mais orgânico de cima */
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3); /* Sombra interna para profundidade */
+            cursor: pointer; /* Clicável */
+        }
+        .mountain-top-left { top: -10%; left: -10%; width: 30%; height: 30%; }
+        .mountain-top-right { top: -5%; right: -10%; width: 25%; height: 25%; background-color: #571c00; }
+        .mountain-bottom-left { bottom: -10%; left: -5%; width: 20%; height: 20%; }
+        .mountain-mid-right { top: 30%; right: -5%; width: 20%; height: 20%; background-color: #78350f; }
+
+        /* Rio e Lago (mais naturais) */
+        .river-aerial {
+            background-color: #38bdf8; /* Cor do rio */
+            position: absolute;
+            width: 15%;
+            height: 100%;
+            left: 20%;
+            top: 0;
+            clip-path: polygon(0 0, 100% 5%, 100% 95%, 0% 100%); /* Forma de rio sinuoso */
+            z-index: 1;
+            cursor: pointer; /* Clicável */
+        }
+        .lake-aerial {
+            background-color: #38bdf8; /* Cor do lago */
+            width: 15%;
+            height: 20%;
+            border-radius: 50%;
+            position: absolute;
+            top: 10%;
+            left: 5%;
+            z-index: 2;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.2);
+            cursor: pointer; /* Clicável */
+        }
+        .river-branch {
+            background-color: #38bdf8;
+            position: absolute;
+            width: 8%;
+            height: 40%;
+            left: 30%; /* Ponto de ramificação do rio principal */
+            top: 40%;
+            transform: rotate(30deg); /* Ângulo da ramificação */
+            clip-path: polygon(0 0, 100% 10%, 100% 90%, 0% 100%);
+            z-index: 1;
+            cursor: pointer; /* Clicável */
+        }
+
+        /* Estradas (rede mais complexa) */
+        .road-aerial {
+            background-color: #4b5563; /* Cor das estradas */
+            position: absolute;
+            z-index: 3;
+            border-radius: 0.2rem;
+            box-shadow: inset 0 0 3px rgba(0,0,0,0.2);
+        }
+        /* Avenida da Luz - Horizontal e Central */
+        .road-avenida-luz-h { width: 80%; height: 8%; top: 45%; left: 10%; }
+        /* Avenida da Luz - Vertical (conectando ao norte) */
+        .road-avenida-luz-v { width: 8%; height: 100%; left: 45%; top: 0%; }
+
+        /* Ruas Ramificadas */
+        .road-rua-cristais { width: 30%; height: 5%; top: 35%; left: 50%; transform: rotate(-10deg); } /* Mais residencial */
+        .road-travessa-sereno { width: 20%; height: 5%; top: 65%; left: 10%; } /* Comércio menor */
+        .road-caminho-ancestral { width: 15%; height: 50%; top: 0%; left: 70%; transform: rotate(10deg); } /* Leva a vestígios */
+        .road-alameda-aurora { width: 25%; height: 5%; top: 20%; left: 60%; transform: rotate(5deg); } /* Cafés/Restaurantes */
+        .road-rua-harmonia { width: 20%; height: 5%; top: 75%; left: 40%; transform: rotate(-5deg); } /* Saúde */
+        .road-rua-inovacao { width: 20%; height: 5%; top: 10%; left: 40%; transform: rotate(15deg); } /* Tecnologia */
+        .road-rua-arte { width: 15%; height: 25%; top: 5%; left: 85%; } /* Cultura */
+        .road-rua-familia { width: 35%; height: 5%; top: 85%; left: 50%; } /* Escolas/Parques */
+        .road-rua-comercio { width: 25%; height: 5%; top: 55%; left: 70%; } /* Mais comércio */
+        .road-rua-serenidade { width: 15%; height: 25%; top: 60%; left: 25%; } /* Casa Velozmente */
+
+
+        /* Vestígios Antigos (ruínas) */
+        .ancient-vestige-aerial {
+            background-color: #78716c; /* Cor para vestígios antigos */
+            position: absolute;
+            opacity: 0.6; /* Mais transparente */
+            border: 1px dashed #57534e; /* Borda tracejada para indicar ruína */
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.2); /* Sombra interna */
+            cursor: pointer; /* Clicável */
+        }
+        .vestige-td-1 { width: 8%; height: 8%; top: 70%; left: 30%; border-radius: 0.5rem; } /* Rua da Serenidade */
+        .vestige-td-2 { width: 7%; height: 10%; top: 60%; left: 15%; border-radius: 0.3rem; transform: rotate(10deg); } /* Perto Travessa do Sereno */
+        .vestige-td-3 { width: 10%; height: 7%; top: 5%; left: 75%; border-radius: 0.4rem; } /* Perto Caminho Ancestral */
+        .vestige-td-4 { width: 6%; height: 6%; top: 20%; left: 65%; border-radius: 50%; } /* Perto Alameda Aurora */
+
+
+        /* Casas (população nova - blocos mais organizados) */
+        .house-aerial {
+            background-color: #fef08a; /* Cor das casas */
+            width: 4%;
+            height: 5%;
+            border-radius: 0.3rem; /* Cantos levemente arredondados */
+            position: absolute;
+            z-index: 4;
+            border: 1px solid #eab308;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.2); /* Sombra para dar volume */
+            cursor: pointer; /* Clicável */
+        }
+        /* Rua da Serenidade - Casa do Velozmente e vizinhos */
+        .house-velozmente { top: 68%; left: 27%; border: 2px solid #0000ff; /* Destaca a casa de Velozmente */ } /* Casa de Velozmente */
+        .house-td-s1 { top: 65%; left: 32%; }
+        .house-td-s2 { top: 72%; left: 22%; }
+        .house-td-s3 { top: 75%; left: 30%; }
+        /* Rua dos Cristais */
+        .house-td-c1 { top: 28%; left: 60%; }
+        .house-td-c2 { top: 32%; left: 55%; }
+        .house-td-c3 { top: 38%; left: 68%; }
+        .house-td-c4 { top: 42%; left: 63%; }
+        .house-td-c5 { top: 25%; left: 70%; }
+        /* Travessa do Sereno */
+        .house-td-ts1 { top: 60%; left: 5%; }
+        .house-td-ts2 { top: 68%; left: 8%; }
+        /* Caminho Ancestral */
+        .house-td-ca1 { top: 15%; left: 75%; }
+        .house-td-ca2 { top: 10%; left: 80%; }
+        /* Alameda da Aurora */
+        .house-td-aa1 { top: 15%; left: 55%; }
+        .house-td-aa2 { top: 25%; left: 58%; }
+        .house-td-aa3 { top: 20%; left: 65%; }
+        /* Rua da Harmonia */
+        .house-td-h1 { top: 70%; left: 50%; }
+        .house-td-h2 { top: 80%; left: 55%; }
+        /* Rua da Inovação */
+        .house-td-i1 { top: 5%; left: 30%; }
+        .house-td-i2 { top: 10%; left: 20%; }
+        /* Rua da Arte */
+        .house-td-a1 { top: 10%; left: 90%; }
+        /* Rua da Família */
+        .house-td-f1 { top: 78%; left: 65%; }
+        .house-td-f2 { top: 90%; left: 70%; }
+        /* Rua do Comércio */
+        .house-td-co1 { top: 50%; left: 75%; }
+        .house-td-co2 { top: 60%; left: 80%; }
+
+
+        /* Lojas (maiores que casas) */
+        .shop-aerial {
+            background-color: #fca5a5; /* Cor das lojas */
+            width: 6%;
+            height: 8%;
+            border-radius: 0.5rem;
+            position: absolute;
+            z-index: 4;
+            border: 1px solid #ef4444;
+            box-shadow: 1px 1px 4px rgba(0,0,0,0.25);
+            cursor: pointer; /* Clicável */
+        }
+        /* Avenida da Luz - Lojas */
+        .shop-avenida-1 { top: 40%; left: 50%; } /* Meio de quarteirão */
+        .shop-avenida-2 { top: 40%; left: 65%; }
+        .shop-avenida-3 { top: 52%; left: 30%; }
+        /* Travessa do Sereno */
+        .shop-travessa-1 { top: 63%; left: 18%; } /* Esquina */
+        .shop-travessa-2 { top: 68%; left: 10%; } /* Meio de quarteirão */
+        /* Alameda da Aurora */
+        .shop-alameda-1 { top: 15%; left: 50%; } /* Café Encontro Sereno */
+        .shop-alameda-2 { top: 22%; left: 55%; }
+        /* Rua da Harmonia - Farmácia Vitalidade */
+        .shop-harmonia-1 { top: 70%; left: 40%; } /* Farmácia Vitalidade */
+        /* Rua da Inovação */
+        .shop-inovacao-1 { top: 15%; left: 45%; }
+        /* Rua da Arte - Loja de Artesanato Cores de Luziana */
+        .shop-arte-1 { top: 20%; left: 88%; } /* Loja de Artesanato */
+        /* Rua do Comércio */
+        .shop-comercio-1 { top: 50%; left: 80%; }
+        .shop-comercio-2 { top: 58%; left: 70%; }
+
+
+        /* Supermercado (maior e central) */
+        .supermarket-aerial {
+            background-color: #a78bfa; /* Cor do supermercado */
+            width: 10%;
+            height: 12%;
+            border-radius: 0.75rem;
+            position: absolute;
+            z-index: 5;
+            border: 2px solid #7c3aed;
+            box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+            top: 40%;
+            left: 35%; /* Perto da Avenida da Luz */
+            cursor: pointer; /* Clicável */
+        }
+        /* Delegacia de Polícia */
+        .police-station-aerial {
+            background-color: #60a5fa; /* Azul mais escuro */
+            width: 8%;
+            height: 10%;
+            border-radius: 0.75rem;
+            position: absolute;
+            z-index: 5;
+            border: 2px solid #2563eb;
+            box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+            top: 58%;
+            left: 45%; /* Perto da Avenida da Luz e ruas residenciais */
+            cursor: pointer; /* Clicável */
+        }
+
+        .legend-container {
+            flex-shrink: 0; /* Não encolhe */
+            background-color: #e2e8f0; /* Cor de fundo da legenda */
+            border-top: 1px solid #cbd5e1; /* Borda superior */
+            padding: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            align-items: center;
+            border-radius: 0 0 1.5rem 1.5rem; /* Cantos arredondados inferiores */
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 0.5rem;
+            font-size: 0.875rem; /* Tamanho da fonte */
+            color: #334155; /* Cor do texto */
+        }
+
+        .legend-color-box {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 0.25rem;
+            margin-right: 0.5rem;
+            border: 1px solid #94a3b8;
+        }
+
+        /* Estilos para o Modal de Informação */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .modal-close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #4b5563;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #1f2937;
+        }
+
+        .modal-body {
+            font-size: 1rem;
+            color: #374151;
+            text-align: left;
+            max-height: 60vh; /* Altura máxima para o corpo do modal */
+            overflow-y: auto; /* Adiciona scroll se o conteúdo for muito grande */
+            width: 100%;
+        }
+
+        /* Responsividade básica */
+        @media (max-width: 768px) {
+            .map-container {
+                aspect-ratio: 4 / 3; /* Ajusta a proporção para telas menores */
+            }
+            .map-area {
+                padding: 0.5rem;
+            }
+            .house-aerial, .shop-aerial, .supermarket-aerial, .police-station-aerial {
+                margin: 0.1rem;
+                width: 6%;
+                height: 8%;
+            }
+            .supermarket-aerial {
+                width: 15%;
+                height: 18%;
+            }
+            .legend-item {
+                font-size: 0.75rem;
+                margin: 0.3rem;
+            }
+            .modal-content {
+                padding: 1rem;
+            }
+            .modal-title {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="map-container">
+        <div class="map-area">
+            <div class="mountain-aerial mountain-top-left" id="mountain-top-left" data-location-name="Montanha do Canto Superior Esquerdo" data-llm-info="A Montanha do Canto Superior Esquerdo é uma das mais antigas elevações de Luziana. Sua flora exuberante é um refúgio para espécies raras, vital para o ecossistema da cidade. Lendas antigas contam que seus picos guardam cristais energéticos que vibram em sintonia com os poderes de luz, resquícios de um tempo ancestral onde Ana de Luz praticava suas habilidades."></div>
+            <div class="mountain-aerial mountain-top-right" id="mountain-top-right" data-location-name="Montanha do Canto Superior Direito" data-llm-info="A Montanha do Canto Superior Direito impõe-se sobre Luziana, servindo como uma barreira natural e um ponto de observação privilegiado. Suas encostas íngremes são lar de fauna e flora intocadas. Diz a lenda que, em suas grutas mais profundas, a energia das chamas roxas se manifestava em rituais antigos, talvez até mesmo influenciando a natureza de Lâmina Sombria."></div>
+            <div class="mountain-aerial mountain-bottom-left" id="mountain-bottom-left" data-location-name="Montanha do Canto Inferior Esquerdo" data-llm-info="Mais baixa e acessível, a Montanha do Canto Inferior Esquerdo é um local de trilhas leves e passeios para os moradores de Luziana, oferecendo vistas panorâmicas da cidade. Um antigo provérbio local diz que a paz de Luziana se reflete na serenidade desta montanha, e que seus vales escondem sussurros da sabedoria ancestral."></div>
+            <div class="mountain-aerial mountain-mid-right" id="mountain-mid-right" data-location-name="Montanha Média Direita" data-llm-info="Esta montanha, de tamanho médio, é conhecida por suas formações rochosas peculiares que lembram sentinelas antigas. É um ponto menos explorado, e dizem que ventos estranhos carregam sussurros de vozes esquecidas por entre suas rochas, talvez ecoando o passado de grandes batalhas."></div>
+
+
+            <div class="river-aerial" id="river" data-location-name="Rio da Vida" data-llm-info="O Rio da Vida serpenteia por Luziana, sendo a principal fonte de água potável e energia limpa para a cidade. Suas águas límpidas são um símbolo da pureza e da vitalidade da comunidade. Uma antiga lenda de Luziana conta que as águas do Rio da Vida, em épocas de grande perigo, podem brilhar com a luz de Ana de Luz, guiando os perdidos para a segurança."></div>
+            <div class="lake-aerial" id="lake" data-location-name="Lago Sereno" data-llm-info="O Lago Sereno é um espelho d'água cristalino, popular para recreação e meditação em Luziana. Suas margens arborizadas são o lar de aves raras. Diz a lenda que, sob suas profundezas tranquilas, jaz um artefato de grande poder da antiga civilização, adormecido desde a época da batalha entre Ana de Luz e Lâmina Sombria."></div>
+            <div class="river-branch" id="river-branch" data-location-name="Braço do Rio" data-llm-info="O Braço do Rio é uma extensão mais estreita do Rio da Vida, que serve como um pequeno canal de transporte para barcos elétricos menores e para o cultivo de vegetação aquática. A população local acredita que este braço, por ser menos explorado, ainda esconde segredos sobre passagens subterrâneas da antiga Luziana."></div>
+
+            <div class="road-aerial road-avenida-luz-h" id="avenida-da-luz-h" data-location-name="Avenida da Luz (Horizontal)" data-llm-info="A Avenida da Luz é a artéria principal de Luziana, cortando a cidade de leste a oeste. É um ponto central de movimento, onde veículos elétricos silenciosos e pedestres convivem harmoniosamente, e as projeções de arte nas fachadas dos edifícios dão vida à noite."></div>
+            <div class="road-aerial road-avenida-luz-v" id="avenida-da-luz-v" data-location-name="Avenida da Luz (Vertical)" data-llm-info="Esta seção da Avenida da Luz conecta o norte ao sul de Luziana, servindo como um eixo vital para o transporte e o comércio. É ladeada por árvores bioluminescentes que brilham suavemente após o pôr do sol, guiando o caminho."></div>
+
+            <div class="road-aerial road-rua-cristais" id="rua-dos-cristais" data-location-name="Rua dos Cristais" data-llm-info="A Rua dos Cristais é conhecida por suas casas com jardins verticais exuberantes e sistemas de energia cristalina. É um bairro residencial tranquilo, onde a comunidade se dedica à sustentabilidade e à beleza, e o som dos cristais vibrando em harmonia pode ser ouvido ao vento."></div>
+            <div class="road-aerial road-travessa-sereno" id="travessa-do-sereno" data-location-name="Travessa do Sereno" data-llm-info="Uma rua charmosa com lojas menores e especializadas, a Travessa do Sereno oferece produtos artesanais e serviços de tecnologia básica. É um local de encontro casual para os moradores, onde o ritmo da vida parece mais lento e acolhedor."></div>
+            <div class="road-aerial road-caminho-ancestral" id="caminho-ancestral" data-location-name="Caminho Ancestral" data-llm-info="O Caminho Ancestral é uma rua que leva diretamente aos vestígios mais antigos de Luziana. Suas pedras parecem sussurrar histórias do passado, e a vegetação cresce de forma mais selvagem, convidando à contemplação e à descoberta de segredos há muito esquecidos."></div>
+            <div class="road-aerial road-alameda-aurora" id="alameda-da-aurora" data-location-name="Alameda da Aurora" data-llm-info="A Alameda da Aurora é vibrante e cheia de vida, especialmente ao entardecer, quando seus muitos cafés e restaurantes abrem suas portas. É um ponto de encontro popular para os jovens e para quem busca uma noite animada, mas pacífica, sob as luzes suaves da cidade."></div>
+            <div class="road-aerial road-rua-harmonia" id="rua-da-harmonia" data-location-name="Rua da Harmonia" data-llm-info="A Rua da Harmonia é dedicada ao bem-estar e à saúde, com a Farmácia 'Vitalidade' e diversos centros de terapias alternativas. O ar aqui é mais puro e o ambiente, convidativo à meditação e ao autocuidado, refletindo a busca da cidade pela paz interior."></div>
+            <div class="road-aerial road-rua-inovacao" id="rua-da-inovacao" data-location-name="Rua da Inovação" data-llm-info="A Rua da Inovação é um polo de criatividade e desenvolvimento, abrigando lojas de tecnologia de ponta e espaços de coworking. Jovens engenheiros e artistas digitais se reúnem aqui para colaborar em projetos que moldam o futuro de Luziana, mantendo o espírito de progresso."></div>
+            <div class="road-aerial road-rua-arte" id="rua-da-arte" data-location-name="Rua da Arte" data-llm-info="A Rua da Arte é o coração cultural de Luziana, com galerias que exibem obras de arte digital e esculturas interativas. A Loja de Artesanato 'Cores de Luziana' é um de seus tesouros, onde a tradição se encontra com a modernidade em criações únicas."></div>
+            <div class="road-aerial road-rua-familia" id="rua-da-familia" data-location-name="Rua da Família" data-llm-info="A Rua da Família é um bairro residencial próspero, repleto de parques infantis vibrantes e escolas com jardins suspensos. O som de risadas de crianças é constante, e as famílias desfrutam de um ambiente seguro e acolhedor, focado na criação de um futuro brilhante para as novas gerações."></div>
+            <div class="road-aerial road-rua-comercio" id="rua-do-comercio" data-location-name="Rua do Comércio" data-llm-info="Uma rua movimentada com uma grande variedade de lojas, desde boutiques de moda sustentável até pequenos mercados de produtos locais. A Rua do Comércio é um centro de atividade diária, onde os moradores encontram tudo o que precisam e se encontram para conversar."></div>
+            <div class="road-aerial road-rua-serenidade" id="rua-da-serenidade" data-location-name="Rua da Serenidade" data-llm-info="A Rua da Serenidade é um recanto de paz, ideal para quem busca tranquilidade. Suas casas são rodeadas por pequenos jardins bioluminescentes, e o silêncio é raramente quebrado, exceto pelo canto dos pássaros. É um local perfeito para a meditação e o descanso."></div>
+
+
+            <div class="ancient-vestige-aerial vestige-td-1" id="vestige-1" data-location-name="Ruínas da Antiga Praça" data-llm-info="EVENTO HISTÓRICO: Era uma vez, as Ruínas da Antiga Praça eram o coração vibrante da Luziana ancestral. Durante uma invasão de sombras, diz a lenda que Ana de Luz canalizou sua energia luminosa aqui, criando um escudo de luz que repeliu as criaturas, mas deixou o local em ruínas. A batalha foi tão intensa que as chamas roxas de Lâmina Sombria, corrompida, deixaram cicatrizes invisíveis na própria pedra."></div>
+            <div class="ancient-vestige-aerial vestige-td-2" id="vestige-2" data-location-name="Arcos da Memória" data-llm-info="EVENTO HISTÓRICO: Os Arcos da Memória são o que resta de um antigo portal cerimonial. Há milênios, diz a lenda, foi aqui que Lâmina Sombria foi aprisionada. Ana de Luz, com o coração partido, ativou o selo final, e um feixe de luz dourada colidiu com as chamas roxas, criando uma distorção temporal que ainda causa leves flutuações na aura do local, percebidas por sensitivos."></div>
+            <div class="ancient-vestige-aerial vestige-td-3" id="vestige-3" data-location-name="Templo Esquecido" data-llm-info="EVENTO HISTÓRICO: O Templo Esquecido, agora apenas ruínas cobertas de musgo, era um centro de estudo dos poderes elementais na antiga Luziana. Uma noite, um grupo de jovens aprendizes tentou replicar os experimentos de Ana de Luz, mas acidentalmente despertou um fragmento da essência sombria das Chamas do Caos. O local foi evacuado às pressas, e o incidente foi encoberto, deixando um segredo sobre um poder oculto."></div>
+            <div class="ancient-vestige-aerial vestige-td-4" id="vestige-4" data-location-name="Pilar da Sabedoria" data-llm-info="EVENTO HISTÓRICO: O Pilar da Sabedoria era uma estrutura monumental que guardava os conhecimentos da antiga civilização de Luziana. Durante o ataque da força maligna que corrompeu Lâmina Sombria, um grupo de anciãos se sacrificou aqui, imbuindo o pilar com sua própria luz vital para proteger os pergaminhos sagrados. O pilar resistiu, mas a energia das chamas roxas deixou nele uma marca de 'silêncio', tornando-o um local onde o conhecimento se esconde de quem não é digno."></div>
+
+            <div class="house-aerial house-velozmente" id="house-velozmente" data-location-name="Casa de Velozmente (Lucas)" data-llm-info="COTIDIANO: A casa de Velozmente na Rua da Serenidade é um refúgio discreto. Por fora, parece uma residência comum de Luziana, com seu jardim vertical e painéis solares. Por dentro, Lucas tem seu laboratório secreto no subsolo, onde a AURA coordena suas patrulhas. À noite, ele pode ser visto meditando no jardim, aproveitando a paz antes de se transformar."></div>
+            <div class="house-aerial house-td-s1" id="house-s1" data-location-name="Casa da Família Silva" data-llm-info="COTIDIANO: Na Casa da Família Silva, a manhã começa com o aroma de pão fresco feito em impressora 3D e o som suave do filho mais novo, Léo, rindo enquanto joga com seu drone de estimação na sala. A mãe, Ana Clara, rega as plantas do jardim vertical automatizado, observando o sol nascer sobre as montanhas."></div>
+            <div class="house-aerial house-td-s2" id="house-s2" data-location-name="Casa da Família Oliveira" data-llm-info="COTIDIANO: Na Casa da Família Oliveira, o pai, Marcos, revisa o relatório de colheita hidropônica em seu tablet flutuante enquanto a filha, Sofia, pratica sua dança holográfica na sala de estar. O ambiente é tranquilo, refletindo a paz de Luziana, com o robô-faxineiro deslizando silenciosamente pelo chão."></div>
+            <div class="house-aerial house-td-s3" id="house-s3" data-location-name="Casa da Família Santos" data-llm-info="COTIDIANO: A Casa da Família Santos é conhecida por seus jantares comunitários semanais, onde vizinhos se reúnem. Hoje, dona Maria Santos prepara um ensopado nutritivo no fogão de indução, enquanto seu marido, João, ajusta a projeção de um pôr do sol artificial na parede da sala, criando um ambiente aconchegante."></div>
+
+            <div class="house-aerial house-td-c1" id="house-c1" data-location-name="Casa da Família Costa" data-llm-info="COTIDIANO: Na Casa da Família Costa, a avó, Aurora, conta histórias da antiga Luziana para seus netos, que ouvem fascinados em volta de uma lareira de plasma. O cheiro de chá de ervas flutua no ar, e a casa, embora moderna, tem um toque de nostalgia e sabedoria ancestral."></div>
+            <div class="house-aerial house-td-c2" id="house-c2" data-location-name="Casa da Família Pereira" data-llm-info="COTIDIANO: Um som suave de música clássica preenche a Casa da Família Pereira, onde Clara, uma musicista, compõe novas melodias em seu sintetizador holográfico. Seu marido, Ricardo, um botânico, cuida das raras orquídeas luminescentes que crescem em seu jardim interno. A paz é quase palpável."></div>
+            <div class="house-aerial house-td-c3" id="house-c3" data-location-name="Casa da Família Souza" data-llm-info="COTIDIANO: Na Casa da Família Souza, a família se prepara para um piquenique à beira do Lago Sereno. A mãe, Beatriz, organiza os alimentos embalados a vácuo, enquanto o pai, Pedro, verifica o percurso no mapa holográfico, rindo com os filhos que já estão animados para a aventura."></div>
+            <div class="house-aerial house-td-c4" id="house-c4" data-location-name="Casa da Família Lima" data-llm-info="COTIDIANO: A Casa da Família Lima é um centro de inovação sustentável. O pai, um engenheiro, trabalha em um novo sistema de captação de energia solar flexível, enquanto os filhos constroem robôs de reciclagem com materiais reutilizados. A casa reflete a paixão da família por um futuro mais verde."></div>
+            <div class="house-aerial house-td-c5" id="house-c5" data-location-name="Casa da Família Rodrigues" data-llm-info="COTIDIANO: Na Casa da Família Rodrigues, uma jovem artista, Lívia, pinta uma paisagem abstrata em uma tela digital, enquanto seu irmão, Daniel, programa um drone para mapear a floresta próxima em busca de novas trilhas. A criatividade e a exploração são o foco do dia."></div>
+
+            <div class="house-aerial house-td-ts1" id="house-ts1" data-location-name="Casa na Travessa do Sereno" data-llm-info="COTIDIANO: Esta casa na Travessa do Sereno tem uma pequena loja de conveniência integrada, gerenciada por uma família que valoriza a conexão com os vizinhos. A porta está sempre aberta para um bate-papo rápido e para a troca de novidades sobre a cidade."></div>
+            <div class="house-aerial house-td-ca1" id="house-ca1" data-location-name="Casa no Caminho Ancestral" data-llm-info="COTIDIANO: Uma das poucas casas no Caminho Ancestral, esta residência é lar de um historiador amador que passa seus dias catalogando as ruínas próximas. O jardim é repleto de plantas raras da antiga Luziana, mantidas vivas por um complexo sistema de irrigação."></div>
+            <div class="house-aerial house-td-aa1" id="house-aa1" data-location-name="Casa na Alameda da Aurora" data-llm-info="COTIDIANO: Com vista para a movimentada Alameda da Aurora, esta casa é o lar de uma família de músicos. À noite, a melodia suave de um instrumento de cordas holográfico pode ser ouvida, acompanhando o burburinho dos cafés e restaurantes."></div>
+            <div class="house-aerial house-td-h1" id="house-h1" data-location-name="Casa na Rua da Harmonia" data-llm-info="COTIDIANO: Esta casa na Rua da Harmonia tem um jardim de ervas medicinais que é a inveja de muitos. A proprietária, uma terapeuta holística, usa as ervas para preparar chás e essências que ajudam a manter a paz e o bem-estar dos moradores da rua."></div>
+            <div class="house-aerial house-td-i1" id="house-i1" data-location-name="Casa na Rua da Inovação" data-llm-info="COTIDIANO: Localizada na Rua da Inovação, esta casa tem uma fachada que muda de cor conforme o humor do proprietário, um designer de interface. Gadgets e protótipos de invenções futuristas podem ser vistos através das grandes janelas, refletindo a criatividade da rua."></div>
+            <div class="house-aerial house-td-a1" id="house-a1" data-location-name="Casa na Rua da Arte" data-llm-info="COTIDIANO: Esta casa na Rua da Arte pertence a um escultor que utiliza materiais reciclados e luz para criar obras interativas. Seu terraço é frequentemente usado para exibições noturnas, onde a luz de suas criações se mistura com a iluminação bioluminescente da cidade."></div>
+            <div class="house-aerial house-td-f1" id="house-f1" data-location-name="Casa na Rua da Família" data-llm-info="COTIDIANO: Uma das maiores casas na Rua da Família, esta residência é um centro de atividades para crianças, com um playground holográfico e salas de aula de realidade virtual. O cheiro de biscoitos recém-assados e o som de risadas preenchem o ar."></div>
+            <div class="house-aerial house-td-co1" id="house-co1" data-location-name="Casa na Rua do Comércio" data-llm-info="COTIDIANO: Esta casa na Rua do Comércio tem um pequeno café no térreo e apartamentos nos andares superiores. A proprietária, uma imigrante de uma cidade próxima, serve cafés especiais e compartilha histórias inspiradoras, tornando o local um ponto de encontro multicultural."></div>
+
+
+            <div class="shop-aerial shop-td-1" id="loja-artesanato" data-location-name="Loja de Artesanato 'Cores de Luziana'" data-llm-info="COTIDIANO: Na Loja de Artesanato 'Cores de Luziana', a artesã Elara finaliza uma luminária feita com cristais naturais, que parecem absorver a luz do ambiente. Um casal de turistas interage com um holograma que mostra o processo de criação, enquanto o perfume de madeiras raras e óleos essenciais paira no ar."></div>
+            <div class="shop-aerial shop-td-2" id="padaria-pao-da-paz" data-location-name="Padaria 'Pão da Paz'" data-llm-info="COTIDIANO: A Padaria 'Pão da Paz' é o ponto de encontro matinal em Luziana. Hoje, Dona Clara serve cafés aromáticos feitos em um robô-barista, enquanto o padeiro, Sr. José, retira fornadas de pães crocantes de um forno autolimpante. Moradores trocam notícias do dia e riem das piadas do atendente robótico, que sempre falha em contar uma piada."></div>
+            <div class="shop-aerial shop-td-3" id="farmacia-vitalidade" data-location-name="Farmácia 'Vitalidade'" data-llm-info="COTIDIANO: Na Farmácia 'Vitalidade', o farmacêutico robô, Dr. Vita, distribui medicamentos personalizados em embalagens biodegradáveis. Uma senhora idosa conversa com a atendente humana, que a auxilia na escolha de um chá de ervas calmante, enquanto jovens consultam informações sobre suplementos em telas interativas."></div>
+            <div class="shop-aerial shop-td-4" id="cafe-encontro-sereno" data-location-name="Café 'Encontro Sereno'" data-llm-info="COTIDIANO: O Café 'Encontro Sereno' é um refúgio de tranquilidade em Luziana. Um artista digital esboça novas ideias em sua tela translúcida, enquanto um grupo de amigos joga um jogo de tabuleiro holográfico. O aroma de cafés especiais e doces energéticos perfuma o ar, e a música ambiente suave convida à reflexão."></div>
+
+            <div class="supermarket-aerial" id="supermarket" data-location-name="Supermercado Central" data-llm-info="COTIDIANO: No Supermercado Central de Luziana, carrinhos autônomos deslizam pelos corredores, organizando os produtos nas prateleiras. Uma criança tenta pegar um pacote de biscoitos flutuantes, enquanto uma mãe consulta o valor nutricional de frutas orgânicas em sua pulseira inteligente. O caixa, um simpático robô, cumprimenta a todos pelo nome."></div>
+
+            <div class="police-station-aerial" id="delegacia-policia" data-location-name="Delegacia de Polícia Local" data-llm-info="COTIDIANO: A Delegacia de Polícia de Luziana é um centro de apoio à comunidade, com seu design discreto e integrado. Policiais humanos e robôs-assistentes monitoram o bem-estar dos cidadãos, e a delegacia serve como um ponto de referência para qualquer necessidade, mais do que um centro de combate ao crime, dada a paz da cidade."></div>
+
+        </div>
+
+        <div class="legend-container">
+            <div class="legend-item">
+                <div class="legend-color-box bg-a3e635"></div>
+                <span>Vegetação / Terra</span>
+            </div>
+             <div class="legend-item">
+                <div class="legend-color-box bg-689f38"></div>
+                <span>Floresta (Mata Velada)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color-box bg-78350f"></div>
+                <span>Montanhas</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color-box bg-38bdf8"></div>
+                <span>Rios / Lagos</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color-box bg-4b5563"></div>
+                <span>Estradas / Ruas</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color-box bg-78716c"></div>
+                <span>Vestígios Antigos</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color-box bg-fef08a"></div>
+                <span>Casas</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color-box bg-fca5a5"></div>
+                <span>Lojas / Comércio</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color-box bg-a78bfa"></div>
+                <span>Supermercado</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color-box bg-60a5fa"></div>
+                <span>Delegacia</span>
+            </div>
+        </div>
+    </div>
+
+    <button id="suggest-event-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
+        Sugestão de Evento para Luziana ✨
+    </button>
+
+    <div id="info-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="closeModal()">×</button>
+            <h2 id="modal-title" class="modal-title"></h2>
+            <div id="modal-body" class="modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+        // Conteúdo pré-gerado para os elementos do mapa
+        const preGeneratedContent = {
+            "mountain-top-left": {
+                title: "Detalhes do Local: Montanha do Canto Superior Esquerdo ✨",
+                content: "A Montanha do Canto Superior Esquerdo é uma das mais antigas elevações de Luziana. Sua flora exuberante é um refúgio para espécies raras, vital para o ecossistema da cidade. Lendas antigas contam que seus picos guardam cristais energéticos que vibram em sintonia com os poderes de luz, resquícios de um tempo ancestral onde Ana de Luz praticava suas habilidades."
+            },
+            "mountain-top-right": {
+                title: "Detalhes do Local: Montanha do Canto Superior Direito ✨",
+                content: "A Montanha do Canto Superior Direito impõe-se sobre Luziana, servindo como uma barreira natural e um ponto de observação privilegiado. Suas encostas íngremes são lar de fauna e flora intocadas. Diz a lenda que, em suas grutas mais profundas, a energia das chamas roxas se manifestava em rituais antigos, talvez até mesmo influenciando a natureza de Lâmina Sombria."
+            },
+            "mountain-bottom-left": {
+                title: "Detalhes do Local: Montanha do Canto Inferior Esquerdo ✨",
+                content: "Mais baixa e acessível, a Montanha do Canto Inferior Esquerdo é um local de trilhas leves e passeios para os moradores de Luziana, oferecendo vistas panorâmicas da cidade. Um antigo provérbio local diz que a paz de Luziana se reflete na serenidade desta montanha, e que seus vales escondem sussurros da sabedoria ancestral."
+            },
+            "mountain-mid-right": {
+                title: "Detalhes do Local: Montanha Média Direita ✨",
+                content: "Esta montanha, de tamanho médio, é conhecida por suas formações rochosas peculiares que lembram sentinelas antigas. É um ponto menos explorado, e dizem que ventos estranhos carregam sussurros de vozes esquecidas por entre suas rochas, talvez ecoando o passado de grandes batalhas."
+            },
+            "river": {
+                title: "Detalhes do Local: Rio da Vida ✨",
+                content: "O Rio da Vida serpenteia por Luziana, sendo a principal fonte de água potável e energia limpa para a cidade. Suas águas límpidas são um símbolo da pureza e da vitalidade da comunidade. Uma antiga lenda de Luziana conta que as águas do Rio da Vida, em épocas de grande perigo, podem brilhar com a luz de Ana de Luz, guiando os perdidos para a segurança."
+            },
+            "lake": {
+                title: "Detalhes do Local: Lago Sereno ✨",
+                content: "O Lago Sereno é um espelho d'água cristalino, popular para recreação e meditação em Luziana. Suas margens arborizadas são o lar de aves raras. Diz a lenda que, sob suas profundezas tranquilas, jaz um artefato de grande poder da antiga civilização, adormecido desde a época da batalha entre Ana de Luz e Lâmina Sombria."
+            },
+            "river-branch": {
+                title: "Detalhes do Local: Braço do Rio ✨",
+                content: "O Braço do Rio é uma extensão mais estreita do Rio da Vida, que serve como um pequeno canal de transporte para barcos elétricos menores e para o cultivo de vegetação aquática. A população local acredita que este braço, por ser menos explorado, ainda esconde segredos sobre passagens subterrâneas da antiga Luziana."
+            },
+            "avenida-da-luz-h": {
+                title: "Detalhes do Local: Avenida da Luz (Horizontal) ✨",
+                content: "A Avenida da Luz é a artéria principal de Luziana, cortando a cidade de leste a oeste. É um ponto central de movimento, onde veículos elétricos silenciosos e pedestres convivem harmoniosamente, e as projeções de arte nas fachadas dos edifícios dão vida à noite."
+            },
+            "avenida-da-luz-v": {
+                title: "Detalhes do Local: Avenida da Luz (Vertical) ✨",
+                content: "Esta seção da Avenida da Luz conecta o norte ao sul de Luziana, servindo como um eixo vital para o transporte e o comércio. É ladeada por árvores bioluminescentes que brilham suavemente após o pôr do sol, guiando o caminho."
+            },
+            "rua-dos-cristais": {
+                title: "Detalhes do Local: Rua dos Cristais ✨",
+                content: "A Rua dos Cristais é conhecida por suas casas com jardins verticais exuberantes e sistemas de energia cristalina. É um bairro residencial tranquilo, onde a comunidade se dedica à sustentabilidade e à beleza, e o som dos cristais vibrando em harmonia pode ser ouvido ao vento."
+            },
+            "travessa-do-sereno": {
+                title: "Detalhes do Local: Travessa do Sereno ✨",
+                content: "Uma rua charmosa com lojas menores e especializadas, a Travessa do Sereno oferece produtos artesanais e serviços de tecnologia básica. É um local de encontro casual para os moradores, onde o ritmo da vida parece mais lento e acolhedor."
+            },
+            "caminho-ancestral": {
+                title: "Detalhes do Local: Caminho Ancestral ✨",
+                content: "O Caminho Ancestral é uma rua que leva diretamente aos vestígios mais antigos de Luziana. Suas pedras parecem sussurrar histórias do passado, e a vegetação cresce de forma mais selvagem, convidando à contemplação e à descoberta de segredos há muito esquecidos."
+            },
+            "alameda-da-aurora": {
+                title: "Detalhes do Local: Alameda da Aurora ✨",
+                content: "A Alameda da Aurora é vibrante e cheia de vida, especialmente ao entardecer, quando seus muitos cafés e restaurantes abrem suas portas. É um ponto de encontro popular para os jovens e para quem busca uma noite animada, mas pacífica, sob as luzes suaves da cidade."
+            },
+            "rua-da-harmonia": {
+                title: "Detalhes do Local: Rua da Harmonia ✨",
+                content: "A Rua da Harmonia é dedicada ao bem-estar e à saúde, com a Farmácia 'Vitalidade' e diversos centros de terapias alternativas. O ar aqui é mais puro e o ambiente, convidativo à meditação e ao autocuidado, refletindo a busca da cidade pela paz interior."
+            },
+            "rua-da-inovacao": {
+                title: "Detalhes do Local: Rua da Inovação ✨",
+                content: "A Rua da Inovação é um polo de criatividade e desenvolvimento, abrigando lojas de tecnologia de ponta e espaços de coworking. Jovens engenheiros e artistas digitais se reúnem aqui para colaborar em projetos que moldam o futuro de Luziana, mantendo o espírito de progresso."
+            },
+            "rua-da-arte": {
+                title: "Detalhes do Local: Rua da Arte ✨",
+                content: "A Rua da Arte é o coração cultural de Luziana, com galerias que exibem obras de arte digital e esculturas interativas. A Loja de Artesanato 'Cores de Luziana' é um de seus tesouros, onde a tradição se encontra com a modernidade em criações únicas."
+            },
+            "rua-da-familia": {
+                title: "Detalhes do Local: Rua da Família ✨",
+                content: "A Rua da Família é um bairro residencial próspero, repleto de parques infantis vibrantes e escolas com jardins suspensos. O som de risadas de crianças é constante, e as famílias desfrutam de um ambiente seguro e acolhedor, focado na criação de um futuro brilhante para as novas gerações."
+            },
+            "rua-do-comercio": {
+                title: "Detalhes do Local: Rua do Comércio ✨",
+                content: "Uma rua movimentada com uma grande variedade de lojas, desde boutiques de moda sustentável até pequenos mercados de produtos locais. A Rua do Comércio é um centro de atividade diária, onde os moradores encontram tudo o que precisam e se encontram para conversar."
+            },
+            "rua-da-serenidade": {
+                title: "Detalhes do Local: Rua da Serenidade ✨",
+                content: "A Rua da Serenidade é um recanto de paz, ideal para quem busca tranquilidade. Suas casas são rodeadas por pequenos jardins bioluminescentes, e o silêncio é raramente quebrado, exceto pelo canto dos pássaros. É um local perfeito para a meditação e o descanso."
+            },
+            "vestige-1": {
+                title: "Evento Histórico: Ruínas da Antiga Praça ✨",
+                content: "Era uma vez, as Ruínas da Antiga Praça eram o coração vibrante da Luziana ancestral. Durante uma invasão de sombras, diz a lenda que Ana de Luz canalizou sua energia luminosa aqui, criando um escudo de luz que repeliu as criaturas, mas deixou o local em ruínas. A batalha foi tão intensa que as chamas roxas de Lâmina Sombria, corrompida, deixaram cicatrizes invisíveis na própria pedra."
+            },
+            "vestige-2": {
+                title: "Evento Histórico: Arcos da Memória ✨",
+                content: "Os Arcos da Memória são o que resta de um antigo portal cerimonial. Há milênios, diz a lenda, foi aqui que Lâmina Sombria foi aprisionada. Ana de Luz, com o coração partido, ativou o selo final, e um feixe de luz dourada colidiu com as chamas roxas, criando uma distorção temporal que ainda causa leves flutuações na aura do local, percebidas por sensitivos."
+            },
+            "vestige-3": {
+                title: "Evento Histórico: Templo Esquecido ✨",
+                content: "O Templo Esquecido, agora apenas ruínas cobertas de musgo, era um centro de estudo dos poderes elementais na antiga Luziana. Uma noite, um grupo de jovens aprendizes tentou replicar os experimentos de Ana de Luz, mas acidentalmente despertou um fragmento da essência sombria das Chamas do Caos. O local foi evacuado às pressas, e o incidente foi encoberto, deixando um segredo sobre um poder oculto."
+            },
+            "vestige-4": {
+                title: "Evento Histórico: Pilar da Sabedoria ✨",
+                content: "O Pilar da Sabedoria era uma estrutura monumental que guardava os conhecimentos da antiga civilização de Luziana. Durante o ataque da força maligna que corrompeu Lâmina Sombria, um grupo de anciãos se sacrificou aqui, imbuindo o pilar com sua própria luz vital para proteger os pergaminhos sagrados. O pilar resistiu, mas a energia das chamas roxas deixou nele uma marca de 'silêncio', tornando-o um local onde o conhecimento se esconde de quem não é digno."
+            },
+            "house-velozmente": {
+                title: "Cotidiano na Casa de Velozmente (Lucas) ✨",
+                content: "COTIDIANO: A casa de Velozmente na Rua da Serenidade é um refúgio discreto. Por fora, parece uma residência comum de Luziana, com seu jardim vertical e painéis solares. Por dentro, Lucas tem seu laboratório secreto no subsolo, onde a AURA coordena suas patrulhas. À noite, ele pode ser visto meditando no jardim, aproveitando a paz antes de se transformar."
+            },
+            "house-s1": {
+                title: "Cotidiano na Casa da Família Silva ✨",
+                content: "COTIDIANO: Na Casa da Família Silva, a manhã começa com o aroma de pão fresco feito em impressora 3D e o som suave do filho mais novo, Léo, rindo enquanto joga com seu drone de estimação na sala. A mãe, Ana Clara, rega as plantas do jardim vertical automatizado, observando o sol nascer sobre as montanhas."
+            },
+            "house-s2": {
+                title: "Cotidiano na Casa da Família Oliveira ✨",
+                content: "COTIDIANO: Na Casa da Família Oliveira, o pai, Marcos, revisa o relatório de colheita hidropônica em seu tablet flutuante enquanto a filha, Sofia, pratica sua dança holográfica na sala de estar. O ambiente é tranquilo, refletindo a paz de Luziana, com o robô-faxineiro deslizando silenciosamente pelo chão."
+            },
+            "house-s3": {
+                title: "Cotidiano na Casa da Família Santos ✨",
+                content: "COTIDIANO: A Casa da Família Santos é conhecida por seus jantares comunitários semanais, onde vizinhos se reúnem. Hoje, dona Maria Santos prepara um ensopado nutritivo no fogão de indução, enquanto seu marido, João, ajusta a projeção de um pôr do sol artificial na parede da sala, criando um ambiente aconchegante."
+            },
+            "house-c1": {
+                title: "Cotidiano na Casa da Família Costa ✨",
+                content: "COTIDIANO: Na Casa da Família Costa, a avó, Aurora, conta histórias da antiga Luziana para seus netos, que ouvem fascinados em volta de uma lareira de plasma. O cheiro de chá de ervas flutua no ar, e a casa, embora moderna, tem um toque de nostalgia e sabedoria ancestral."
+            },
+            "house-c2": {
+                title: "Cotidiano na Casa da Família Pereira ✨",
+                content: "COTIDIANO: Um som suave de música clássica preenche a Casa da Família Pereira, onde Clara, uma musicista, compõe novas melodias em seu sintetizador holográfico. Seu marido, Ricardo, um botânico, cuida das raras orquídeas luminescentes que crescem em seu jardim interno. A paz é quase palpável."
+            },
+            "house-c3": {
+                title: "Cotidiano na Casa da Família Souza ✨",
+                content: "COTIDIANO: Na Casa da Família Souza, a família se prepara para um piquenique à beira do Lago Sereno. A mãe, Beatriz, organiza os alimentos embalados a vácuo, enquanto o pai, Pedro, verifica o percurso no mapa holográfico, rindo com os filhos que já estão animados para a aventura."
+            },
+            "house-c4": {
+                title: "Cotidiano na Casa da Família Lima ✨",
+                content: "COTIDIANO: A Casa da Família Lima é um centro de inovação sustentável. O pai, um engenheiro, trabalha em um novo sistema de captação de energia solar flexível, enquanto os filhos constroem robôs de reciclagem com materiais reutilizados. A casa reflete a paixão da família por um futuro mais verde."
+            },
+            "house-c5": {
+                title: "Cotidiano na Casa da Família Rodrigues ✨",
+                content: "COTIDIANO: Na Casa da Família Rodrigues, uma jovem artista, Lívia, pinta uma paisagem abstrata em uma tela digital, enquanto seu irmão, Daniel, programa um drone para mapear a floresta próxima em busca de novas trilhas. A criatividade e a exploração são o foco do dia."
+            },
+            "house-td-ts1": {
+                title: "Cotidiano na Casa na Travessa do Sereno ✨",
+                content: "COTIDIANO: Esta casa na Travessa do Sereno tem uma pequena loja de conveniência integrada, gerenciada por uma família que valoriza a conexão com os vizinhos. A porta está sempre aberta para um bate-papo rápido e para a troca de novidades sobre a cidade."
+            },
+            "house-td-ca1": {
+                title: "Cotidiano na Casa no Caminho Ancestral ✨",
+                content: "COTIDIANO: Uma das poucas casas no Caminho Ancestral, esta residência é lar de um historiador amador que passa seus dias catalogando as ruínas próximas. O jardim é repleto de plantas raras da antiga Luziana, mantidas vivas por um complexo sistema de irrigação."
+            },
+            "house-td-aa1": {
+                title: "Cotidiano na Casa na Alameda da Aurora ✨",
+                content: "COTIDIANO: Com vista para a movimentada Alameda da Aurora, esta casa é o lar de uma família de músicos. À noite, a melodia suave de um instrumento de cordas holográfico pode ser ouvida, acompanhando o burburinho dos cafés e restaurantes."
+            },
+            "house-td-h1": {
+                title: "Cotidiano na Casa na Rua da Harmonia ✨",
+                content: "COTIDIANO: Esta casa na Rua da Harmonia tem um jardim de ervas medicinais que é a inveja de muitos. A proprietária, uma terapeuta holística, usa as ervas para preparar chás e essências que ajudam a manter a paz e o bem-estar dos moradores da rua."
+            },
+            "house-td-i1": {
+                title: "Cotidiano na Casa na Rua da Inovação ✨",
+                content: "COTIDIANO: Localizada na Rua da Inovação, esta casa tem uma fachada que muda de cor conforme o humor do proprietário, um designer de interface. Gadgets e protótipos de invenções futuristas podem ser vistos através das grandes janelas, refletindo a criatividade da rua."
+            },
+            "house-td-a1": {
+                title: "Cotidiano na Casa na Rua da Arte ✨",
+                content: "COTIDIANO: Esta casa na Rua da Arte pertence a um escultor que utiliza materiais reciclados e luz para criar obras interativas. Seu terraço é frequentemente usado para exibições noturnas, onde a luz de suas criações se mistura com a iluminação bioluminescente da cidade."
+            },
+            "house-td-f1": {
+                title: "Cotidiano na Casa na Rua da Família ✨",
+                content: "COTIDIANO: Uma das maiores casas na Rua da Família, esta residência é um centro de atividades para crianças, com um playground holográfico e salas de aula de realidade virtual. O cheiro de biscoitos recém-assados e o som de risadas preenchem o ar."
+            },
+            "house-td-co1": {
+                title: "Cotidiano na Casa na Rua do Comércio ✨",
+                content: "COTIDIANO: Esta casa na Rua do Comércio tem um pequeno café no térreo e apartamentos nos andares superiores. A proprietária, uma imigrante de uma cidade próxima, serve cafés especiais e compartilha histórias inspiradoras, tornando o local um ponto de encontro multicultural."
+            },
+            "loja-artesanato": {
+                title: "Cotidiano na Loja de Artesanato 'Cores de Luziana' ✨",
+                content: "COTIDIANO: Na Loja de Artesanato 'Cores de Luziana', a artesã Elara finaliza uma luminária feita com cristais naturais, que parecem absorver a luz do ambiente. Um casal de turistas interage com um holograma que mostra o processo de criação, enquanto o perfume de madeiras raras e óleos essenciais paira no ar."
+            },
+            "padaria-pao-da-paz": {
+                title: "Cotidiano na Padaria 'Pão da Paz' ✨",
+                content: "COTIDIANO: A Padaria 'Pão da Paz' é o ponto de encontro matinal em Luziana. Hoje, Dona Clara serve cafés aromáticos feitos em um robô-barista, enquanto o padeiro, Sr. José, retira fornadas de pães crocantes de um forno autolimpante. Moradores trocam notícias do dia e riem das piadas do atendente robótico, que sempre falha em contar uma piada."
+            },
+            "farmacia-vitalidade": {
+                title: "Cotidiano na Farmácia 'Vitalidade' ✨",
+                content: "COTIDIANO: Na Farmácia 'Vitalidade', o farmacêutico robô, Dr. Vita, distribui medicamentos personalizados em embalagens biodegradáveis. Uma senhora idosa conversa com a atendente humana, que a auxilia na escolha de um chá de ervas calmante, enquanto jovens consultam informações sobre suplementos em telas interativas."
+            },
+            "cafe-encontro-sereno": {
+                title: "Cotidiano no Café 'Encontro Sereno' ✨",
+                content: "COTIDIANO: O Café 'Encontro Sereno' é um refúgio de tranquilidade em Luziana. Um artista digital esboça novas ideias em sua tela translúcida, enquanto um grupo de amigos joga um jogo de tabuleiro holográfico. O aroma de cafés especiais e doces energéticos perfuma o ar, e a música ambiente suave convida à reflexão."
+            },
+            "supermarket": {
+                title: "Cotidiano no Supermercado Central ✨",
+                content: "COTIDIANO: No Supermercado Central de Luziana, carrinhos autônomos deslizam pelos corredores, organizando os produtos nas prateleiras. Uma criança tenta pegar um pacote de biscoitos flutuantes, enquanto uma mãe consulta o valor nutricional de frutas orgânicas em sua pulseira inteligente. O caixa, um simpático robô, cumprimenta a todos pelo nome."
+            },
+            "delegacia-policia": {
+                title: "Cotidiano na Delegacia de Polícia Local ✨",
+                content: "COTIDIANO: A Delegacia de Polícia de Luziana é um centro de apoio à comunidade, com seu design discreto e integrado. Policiais humanos e robôs-assistentes monitoram o bem-estar dos cidadãos, e a delegacia serve como um ponto de referência para qualquer necessidade, mais do que um centro de combate ao crime, dada a paz da cidade."
+            },
+            "global-event": {
+                title: "Sugestão de Evento para Luziana ✨",
+                content: "Uma série de pequenos 'apagões' de energia solar começa a ocorrer em Luziana, afetando apenas locais específicos e por curtos períodos. Não há danos, mas os incidentes são acompanhados de um estranho zumbido quase imperceptível. Os moradores atribuem a falhas no sistema, mas os heróis podem investigar uma anomalia energética sutil vinda de um dos vestígios antigos, talvez um 'eco' do aprisionamento de Lâmina Sombria que está se intensificando."
+            }
+        };
+
+        // Função para exibir o modal
+        function showModal(title, content) {
+            const modal = document.getElementById('info-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+
+            modalTitle.textContent = title;
+            modalBody.innerHTML = content.replace(/\n/g, '<br>'); // Substitui quebras de linha por <br> para HTML
+            modal.classList.add('show');
+        }
+
+        // Função para fechar o modal
+        function closeModal() {
+            const modal = document.getElementById('info-modal');
+            modal.classList.remove('show');
+            document.getElementById('modal-body').innerHTML = ''; // Limpa o conteúdo ao fechar
+        }
+
+        // Adiciona event listeners para os elementos clicáveis do mapa e botão global
+        document.addEventListener('DOMContentLoaded', () => {
+            const clickableElements = document.querySelectorAll('[id^="mountain-"], [id^="river"], [id^="lake"], [id^="vestige-"], [id^="house-"], [id^="shop-"], #supermarket, #delegacia-policia, [id^="avenida-da-luz"], [id^="rua-"]');
+
+            clickableElements.forEach(element => {
+                element.addEventListener('click', () => {
+                    const id = element.id;
+                    if (preGeneratedContent[id]) {
+                        showModal(preGeneratedContent[id].title, preGeneratedContent[id].content);
+                    } else {
+                        // Para ruas que não tem um LLM-info direto (apenas um nome)
+                        const locationName = element.dataset.locationName || element.id;
+                        showModal(`Detalhes da Rua: ${locationName}`, `Esta é uma das ruas de Luziana. Ela faz parte da rede que interliga os bairros e pontos comerciais da cidade, contribuindo para a sua paz e harmonia.`);
+                    }
+                });
+            });
+
+            // Adiciona event listener para o botão global de sugestão de evento
+            const suggestEventButton = document.getElementById('suggest-event-button');
+            suggestEventButton.addEventListener('click', () => {
+                if (preGeneratedContent["global-event"]) {
+                    showModal(preGeneratedContent["global-event"].title, preGeneratedContent["global-event"].content);
+                } else {
+                    showModal("Sugestão de Evento", "Não foi possível gerar uma sugestão de evento no momento.");
+                }
+            });
+        });
+    </script>
+</body>
+</html>
